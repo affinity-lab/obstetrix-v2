@@ -33,12 +33,53 @@ export FORCE RESET_TOKEN ENV_FILE CONFIG_ROOT REPO_ROOT PLATFORM PROJECTS_DIR
 
 [[ $EUID -eq 0 ]] || die "must run as root (use sudo)"
 
+# --- Token Collection (Required before Phase 1 for bun install) ---
+_get_token() {
+  local conf="${CONFIG_ROOT}/obstetrix.conf"
+  local current_token=""
+  [[ -f "$conf" ]] && current_token=$(grep -oP '(?<=GITHUB_TOKEN=).+' "$conf" 2>/dev/null || true)
+
+  if [[ -n "$ENV_FILE" ]]; then
+    # shellcheck source=/dev/null
+    if [[ -f "$ENV_FILE" ]]; then
+      source "$ENV_FILE"
+    else
+      die "--env-file $ENV_FILE not found"
+    fi
+    [[ -z "${GITHUB_TOKEN:-}" ]] && die "--env-file provided but GITHUB_TOKEN not set"
+    export GITHUB_TOKEN
+    export BUN_CONFIG_GITHUB_TOKEN="$GITHUB_TOKEN"
+  elif [[ -z "$current_token" ]] || [[ $RESET_TOKEN -eq 1 ]]; then
+    echo
+    echo -e "${YELLOW}[obstetrix]${NC} This project requires a GitHub Personal Access Token to download private dependencies."
+    echo "Enter your GitHub PAT (repo or contents:read scope)."
+    echo "Press Enter to skip (installation will likely fail if dependencies are private)."
+    read -r -s -p "GITHUB_TOKEN: " token; echo
+    if [[ -n "$token" ]]; then
+       export GITHUB_TOKEN="$token"
+       export BUN_CONFIG_GITHUB_TOKEN="$token"
+    fi
+  else
+    export GITHUB_TOKEN="$current_token"
+    export BUN_CONFIG_GITHUB_TOKEN="$current_token"
+    info "GITHUB_TOKEN already set"
+  fi
+}
+
 _write_token() {
-  local token="$1"
+  local token="${1:-${GITHUB_TOKEN:-}}"
+  [[ -z "$token" ]] && return
   local conf="${CONFIG_ROOT}/obstetrix.conf"
   sed -i "s|^GITHUB_TOKEN=.*|GITHUB_TOKEN=${token}|" "$conf"
   info "GITHUB_TOKEN written to obstetrix.conf"
 }
+
+info "preparing installation..."
+_get_token
+
+info "phase 1: preinstall"
+# shellcheck source=preinstall.sh
+source "$SCRIPT_DIR/preinstall.sh"
 
 _install_main() {
   local conf="${CONFIG_ROOT}/obstetrix.conf"
@@ -53,7 +94,7 @@ LOG_DIR=/var/${PLATFORM}/logs
 BACKUP_DIR=/var/${PLATFORM}/backups
 SOCKET_PATH=/run/${PLATFORM}/orchestrator.sock
 
-GITHUB_TOKEN=
+GITHUB_TOKEN=${GITHUB_TOKEN:-}
 GITHUB_POLL_INTERVAL=30s
 GITHUB_TIMEOUT=10s
 
@@ -70,6 +111,9 @@ GUI_HOST=127.0.0.1
 EOF
     chown root:obstetrix "$conf"
     chmod 640 "$conf"
+  else
+    # Update token in existing config if it was changed/provided
+    _write_token
   fi
 
   # Example project config
@@ -102,30 +146,7 @@ EOF
     chown -R root:obstetrix "$example_dir"
     chmod 640 "${example_dir}/project.conf" "${example_dir}/.env" "${example_dir}/.npmrc"
   fi
-
-  # GitHub token
-  local current_token
-  current_token=$(grep -oP '(?<=GITHUB_TOKEN=).+' "$conf" 2>/dev/null || true)
-
-  if [[ -n "$ENV_FILE" ]]; then
-    # shellcheck source=/dev/null
-    source "$ENV_FILE"
-    [[ -z "${GITHUB_TOKEN:-}" ]] && die "--env-file provided but GITHUB_TOKEN not set"
-    _write_token "$GITHUB_TOKEN"
-  elif [[ -z "$current_token" ]] || [[ $RESET_TOKEN -eq 1 ]]; then
-    echo
-    echo "Enter your GitHub Personal Access Token (contents:read scope)."
-    echo "Press Enter to skip — set later in ${CONFIG_ROOT}/obstetrix.conf"
-    read -r -s -p "GITHUB_TOKEN: " token; echo
-    [[ -n "$token" ]] && _write_token "$token" || warn "GITHUB_TOKEN not set — polling will fail"
-  else
-    info "GITHUB_TOKEN already set"
-  fi
 }
-
-info "phase 1: preinstall"
-# shellcheck source=preinstall.sh
-source "$SCRIPT_DIR/preinstall.sh"
 
 info "phase 2: install"
 _install_main

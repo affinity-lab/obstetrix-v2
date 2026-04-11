@@ -21,11 +21,12 @@ Go and Bun do **not** need to be pre-installed — the installer handles them.
 sudo bash scripts/install.sh
 ```
 
-The installer runs in three phases:
+The installer runs in four phases:
 
-1. **Preinstall** — installs Go 1.22, Bun, git, nginx; creates system users and directories; compiles the orchestrator and CLI; builds the GUI
-2. **Install** — writes `/etc/obstetrix/obstetrix.conf` (skipped if already exists); prompts for GitHub token
-3. **Postinstall** — writes and enables systemd units; waits for the socket; smoke-tests `obstetrix-ctl status`
+0. **Preparation** — checks for root access; prompts for or loads the `GITHUB_TOKEN` (required early for private dependencies).
+1. **Preinstall** — installs Go 1.22, Bun, git, nginx; creates system users and directories; compiles the orchestrator and CLI; builds the GUI (uses the token for `bun install`).
+2. **Install** — writes `/etc/obstetrix/obstetrix.conf` (skipped if already exists); saves the token to the config file.
+3. **Postinstall** — writes and enables systemd units; waits for the socket; smoke-tests `obstetrix-ctl status`.
 
 ### Flags
 
