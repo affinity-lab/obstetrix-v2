@@ -61,6 +61,8 @@ EnvironmentFile=${CONFIG_ROOT}/obstetrix.conf
 Environment=PORT=3000
 Environment=HOST=127.0.0.1
 Environment=NODE_ENV=production
+UnsetEnvironment=SOCKET_PATH
+Environment=ORCHESTRATOR_SOCKET=/run/${PLATFORM}/orchestrator.sock
 
 ExecStart=/usr/local/bin/bun /opt/${PLATFORM}/gui/build/index.js
 

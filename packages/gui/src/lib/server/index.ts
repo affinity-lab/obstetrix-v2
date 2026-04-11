@@ -15,7 +15,7 @@ const env = new Env(path.resolve(__dirname, '../../../../'));
 
 const config: GuiServerConfig = {
   socket: {
-    path: env.string('SOCKET_PATH', '/run/obstetrix/orchestrator.sock'),
+    path: env.string('ORCHESTRATOR_SOCKET', '/run/obstetrix/orchestrator.sock'),
   },
 };
 

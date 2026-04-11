@@ -111,7 +111,16 @@ _install_gui() {
   info "installing gui to /opt/${PLATFORM}/gui..."
   mkdir -p "/opt/${PLATFORM}/gui"
   rsync -a --delete "$REPO_ROOT/packages/gui/build/" "/opt/${PLATFORM}/gui/build/"
-  cp "$REPO_ROOT/packages/gui/package.json" "/opt/${PLATFORM}/gui/"
+  # Strip workspace:* deps (bundled at build time) so bun install works outside the monorepo
+  bun -e "
+    const pkg = JSON.parse(require('fs').readFileSync('$REPO_ROOT/packages/gui/package.json','utf8'));
+    for (const [k,v] of Object.entries(pkg.dependencies ?? {}))
+      if (v.startsWith('workspace:')) delete pkg.dependencies[k];
+    require('fs').writeFileSync('/opt/$PLATFORM/gui/package.json', JSON.stringify(pkg, null, 2));
+  "
+  cp "$REPO_ROOT/.npmrc" "/opt/${PLATFORM}/gui/"
+  info "installing gui runtime dependencies..."
+  (cd "/opt/${PLATFORM}/gui" && bun install --production)
   chown -R obstetrix:obstetrix "/opt/${PLATFORM}/gui"
 }
 
