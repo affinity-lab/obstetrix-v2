@@ -1,0 +1,15 @@
+{
+  "name": "obstetrix-cicd",
+  "private": true,
+  "workspaces": ["packages/shared", "packages/gui"],
+  "scripts": {
+    "build:shared":       "cd packages/shared && bun run build",
+    "build:gui":          "cd packages/gui && bun run build",
+    "build:orchestrator": "cd packages/orchestrator && go build -ldflags='-s -w' -o /usr/local/bin/obstetrix-orchestratord ./cmd/orchestratord",
+    "build:cli":          "cd packages/cli && go build -ldflags='-s -w' -o /usr/local/bin/obstetrix-ctl ./cmd/obstetrix-ctl",
+    "build":              "bun run build:shared && bun run build:orchestrator && bun run build:cli && bun run build:gui",
+    "dev:gui":            "cd packages/gui && bun run dev",
+    "install:system":     "sudo bash scripts/install.sh",
+    "update:system":      "sudo bash scripts/update.sh"
+  }
+}

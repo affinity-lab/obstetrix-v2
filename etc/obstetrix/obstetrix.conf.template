@@ -1,0 +1,29 @@
+# /etc/obstetrix/obstetrix.conf
+# Permissions: root:obstetrix 640
+# Environment variables override any value set here.
+
+CONFIG_ROOT=/etc/obstetrix
+PROJECTS_DIR=/obstetrix-projects
+STATE_DIR=/var/obstetrix/state
+LOG_DIR=/var/obstetrix/logs
+BACKUP_DIR=/var/obstetrix/backups
+SOCKET_PATH=/run/obstetrix/orchestrator.sock
+
+# GitHub — required for polling
+GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+GITHUB_POLL_INTERVAL=30s
+GITHUB_TIMEOUT=10s
+
+# Backup defaults (can be overridden per-project in project.conf)
+BACKUP_SCHEDULE=0 3 * * *
+BACKUP_RETENTION=7
+
+LOG_LEVEL=info
+GUI_PORT=3000
+GUI_HOST=127.0.0.1
+
+# Port assignments — auto-managed by obstetrix-ctl project create/delete
+# Format: PORT.{name}=base_port:count
+# Example: PORT.api=4000:4 → ports 4000, 4001, 4002, 4003 reserved for "api"
+# PORT.api=4000:4
+# PORT.payments=4004:2

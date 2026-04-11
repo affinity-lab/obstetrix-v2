@@ -1,0 +1,183 @@
+# Installation
+
+## Requirements
+
+| Requirement | Notes |
+|-------------|-------|
+| Linux + systemd | Tested on Debian/Ubuntu; any systemd distro should work |
+| Architecture | x86_64 or arm64 |
+| Root access | Installer runs as root |
+| Internet access | Downloads Go 1.22.4 and Bun during install |
+| git | Installed automatically if missing |
+| nginx | Installed automatically if missing |
+
+Go and Bun do **not** need to be pre-installed — the installer handles them.
+
+---
+
+## Install
+
+```bash
+sudo bash scripts/install.sh
+```
+
+The installer runs in three phases:
+
+1. **Preinstall** — installs Go 1.22, Bun, git, nginx; creates system users and directories; compiles the orchestrator and CLI; builds the GUI
+2. **Install** — writes `/etc/obstetrix/obstetrix.conf` (skipped if already exists); prompts for GitHub token
+3. **Postinstall** — writes and enables systemd units; waits for the socket; smoke-tests `obstetrix-ctl status`
+
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--force` | Recompile and rebuild even if binaries already exist |
+| `--reset-token` | Prompt to replace the stored GitHub token |
+| `--env-file PATH` | Read `GITHUB_TOKEN` from a file instead of prompting |
+| `--config-root PATH` | Override config directory (default: `/etc/obstetrix`) |
+| `--projects-dir PATH` | Override projects directory (default: `/obstetrix-projects`) |
+
+```bash
+# Non-interactive install reading token from a file
+sudo bash scripts/install.sh --env-file /root/secrets.env
+
+# Install to custom paths
+sudo bash scripts/install.sh --config-root /srv/obstetrix/etc --projects-dir /srv/obstetrix/projects
+```
+
+---
+
+## What gets created
+
+### System users
+
+| User | Purpose |
+|------|---------|
+| `obstetrix` | Runs the GUI process |
+| `obstetrix-{name}` | Runs app processes for project `{name}` (created on first deploy) |
+
+Both are system users with no home directory and no login shell.
+
+### Directories
+
+| Path | Mode | Purpose |
+|------|------|---------|
+| `/etc/obstetrix/` | `root:obstetrix 750` | Config root |
+| `/etc/obstetrix/projects/` | `root:obstetrix 750` | Per-project config folders |
+| `/obstetrix-projects/` | `root:root 755` | App deploy root |
+| `/obstetrix-projects/_work/` | `root:root 755` | Build scratch root |
+| `/var/obstetrix/state/` | `root 755` | Deploy state JSON files |
+| `/var/obstetrix/logs/` | `root 755` | Deploy JSONL log files |
+| `/var/obstetrix/backups/` | `root 750` | Backup archives |
+| `/opt/obstetrix/gui/` | `obstetrix 755` | GUI build output |
+| `/run/obstetrix/` | `root:obstetrix 770` | Runtime (Unix socket) |
+
+### Binaries
+
+| Binary | Location |
+|--------|----------|
+| Orchestrator daemon | `/usr/local/bin/obstetrix-orchestratord` |
+| CLI | `/usr/local/bin/obstetrix-ctl` |
+| Bun runtime | `/usr/local/bin/bun` |
+
+### Systemd units
+
+| Unit | User | Description |
+|------|------|-------------|
+| `obstetrix-orchestratord.service` | root | Core daemon |
+| `obstetrix-gui.service` | obstetrix | Web UI (port 3000) |
+| `{name}@.service` | obstetrix-{name} | Per-project template (written on first deploy) |
+
+---
+
+## GitHub Personal Access Token
+
+The orchestrator polls GitHub's API to detect new commits. The token needs:
+
+- **Public repos:** `contents:read` scope (or a fine-grained token with "Contents: Read-only")
+- **Private repos:** classic token with `repo` scope, or fine-grained with "Contents: Read-only"
+
+The token is stored in `/etc/obstetrix/obstetrix.conf` (mode `root:obstetrix 640`).
+
+To update the token after install:
+
+```bash
+sudo bash scripts/install.sh --reset-token
+```
+
+Or edit the file directly:
+
+```bash
+sudo nano /etc/obstetrix/obstetrix.conf
+# Change: GITHUB_TOKEN=ghp_...
+sudo systemctl restart obstetrix-orchestratord
+```
+
+---
+
+## Update
+
+Recompiles from source and restarts services:
+
+```bash
+cd /path/to/obstetrix-repo
+sudo bash scripts/update.sh
+```
+
+The update script runs preinstall with `FORCE=1`, then restarts both services.
+
+---
+
+## Uninstall
+
+```bash
+# Remove services and binaries (keeps all data)
+sudo bash scripts/uninstall.sh
+
+# Remove everything including configs, state, logs, backups, app dirs, and system users
+sudo bash scripts/uninstall.sh --purge
+```
+
+`--purge` requires double confirmation before deleting any data.
+
+---
+
+## nginx reverse proxy
+
+The GUI binds to `127.0.0.1:3000` by default. To expose it over HTTPS:
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name cicd.example.com;
+
+    ssl_certificate     /etc/ssl/certs/obstetrix.crt;
+    ssl_certificate_key /etc/ssl/private/obstetrix.key;
+
+    proxy_http_version 1.1;
+    proxy_set_header Connection '';
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    # SSE routes must not be buffered
+    location ~ ^/api/(logs|events) {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 3600s;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+    }
+}
+```
+
+Place this in `/etc/nginx/sites-available/obstetrix` and enable it:
+
+```bash
+sudo ln -s /etc/nginx/sites-available/obstetrix /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+```

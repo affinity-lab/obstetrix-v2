@@ -1,0 +1,382 @@
+package modules
+
+import (
+	"bufio"
+	"context"
+	"encoding/json"
+	"fmt"
+	"log/slog"
+	"net"
+	"time"
+
+	"github.com/yourorg/obstetrix/orchestrator/internal/config"
+	"github.com/yourorg/obstetrix/orchestrator/internal/services"
+)
+
+type RPCModule struct {
+	mods *Modules
+	svcs *services.Services
+}
+
+func newRPCModule(mods *Modules, svcs *services.Services) *RPCModule {
+	return &RPCModule{mods: mods, svcs: svcs}
+}
+
+type rpcRequest struct {
+	ID     int             `json:"id"`
+	Method string          `json:"method"`
+	Params json.RawMessage `json:"params"`
+}
+
+type rpcResponse struct {
+	ID     int         `json:"id"`
+	Result interface{} `json:"result,omitempty"`
+	Error  *rpcError   `json:"error,omitempty"`
+}
+
+type rpcError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+func errResp(id int, msg string) rpcResponse {
+	return rpcResponse{ID: id, Error: &rpcError{Code: -32000, Message: msg}}
+}
+
+// Dispatch is passed to SocketService.Serve. Called once per connection in a goroutine.
+// It renews the 5-minute idle deadline on every received line.
+func (r *RPCModule) Dispatch(conn net.Conn) {
+	defer conn.Close()
+	scanner := bufio.NewScanner(conn)
+	enc := json.NewEncoder(conn)
+
+	var unsubscribe func()
+	defer func() {
+		if unsubscribe != nil {
+			unsubscribe()
+		}
+	}()
+
+	for scanner.Scan() {
+		conn.SetDeadline(time.Now().Add(5 * time.Minute))
+
+		var req rpcRequest
+		if err := json.Unmarshal(scanner.Bytes(), &req); err != nil {
+			enc.Encode(errResp(0, "parse error: "+err.Error()))
+			continue
+		}
+
+		ctx := context.Background()
+		var result interface{}
+		var rpcErr string
+
+		switch req.Method {
+
+		case "status.all":
+			states, err := r.svcs.State.ReadAll()
+			if err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = states
+
+		case "status.project":
+			var p struct {
+				Name string `json:"name"`
+			}
+			json.Unmarshal(req.Params, &p)
+			st, err := r.svcs.State.Read(p.Name)
+			if err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = st
+
+		case "deploy.trigger":
+			var p struct {
+				Name string `json:"name"`
+				SHA  string `json:"sha"`
+			}
+			json.Unmarshal(req.Params, &p)
+			projects := r.svcs.ConfigWatcher.All()
+			proj, ok := projects[p.Name]
+			if !ok {
+				rpcErr = fmt.Sprintf("project %q not found", p.Name)
+				break
+			}
+			sha := p.SHA
+			if sha == "" {
+				sha, _ = r.svcs.GitHub.HeadSHA(proj.RepoURL, proj.Branch)
+			}
+			r.mods.Poller.TriggerDeploy(ctx, proj, sha, false)
+			result = map[string]bool{"queued": true}
+
+		case "deploy.rollback":
+			var p struct {
+				Name string `json:"name"`
+			}
+			json.Unmarshal(req.Params, &p)
+			st, _ := r.svcs.State.Read(p.Name)
+			if st.PreviousSHA == nil {
+				rpcErr = "no previous SHA"
+				break
+			}
+			projects := r.svcs.ConfigWatcher.All()
+			proj, ok := projects[p.Name]
+			if !ok {
+				rpcErr = fmt.Sprintf("project %q not found", p.Name)
+				break
+			}
+			r.mods.Poller.TriggerDeploy(ctx, proj, *st.PreviousSHA, true)
+			result = map[string]bool{"ok": true}
+
+		case "scale.set":
+			var p struct {
+				Name      string `json:"name"`
+				Instances int    `json:"instances"`
+			}
+			json.Unmarshal(req.Params, &p)
+			projects := r.svcs.ConfigWatcher.All()
+			proj, ok := projects[p.Name]
+			if !ok {
+				rpcErr = fmt.Sprintf("project %q not found", p.Name)
+				break
+			}
+			res, err := r.mods.Deploy.Scale(ctx, proj, p.Instances)
+			if err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = res
+
+		case "scale.get":
+			var p struct {
+				Name string `json:"name"`
+			}
+			json.Unmarshal(req.Params, &p)
+			st, err := r.svcs.State.Read(p.Name)
+			if err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = map[string]interface{}{"instances": st.Instances, "ports": st.RunningPorts}
+
+		case "config.reload":
+			n := r.mods.Poller.ReloadProjects()
+			result = map[string]int{"reloaded": n}
+
+		case "config.setEnv":
+			var p struct {
+				Name    string `json:"name"`
+				Content string `json:"content"`
+			}
+			json.Unmarshal(req.Params, &p)
+			pp := r.svcs.ConfigWatcher.Paths().Project(p.Name)
+			if err := r.svcs.ConfigRW.WriteRaw(pp.Env, p.Content); err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = map[string]bool{"ok": true}
+
+		case "config.syncEnv":
+			var p struct {
+				Name string `json:"name"`
+			}
+			json.Unmarshal(req.Params, &p)
+			if err := r.mods.Deploy.SyncEnv(ctx, p.Name); err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = map[string]bool{"ok": true}
+
+		case "config.getMainConf":
+			var p struct {
+				Mask bool `json:"mask"`
+			}
+			json.Unmarshal(req.Params, &p)
+			m, err := r.svcs.ConfigRW.ReadMainConf(p.Mask)
+			if err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = m
+
+		case "config.setMainConf":
+			var p struct {
+				Changes map[string]string `json:"changes"`
+			}
+			json.Unmarshal(req.Params, &p)
+			if err := r.svcs.ConfigRW.WriteConf(r.svcs.ConfigRW.Paths().ObstetrixConf, p.Changes); err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = map[string]bool{"ok": true}
+
+		case "config.getProjectConf":
+			var p struct {
+				Name string `json:"name"`
+			}
+			json.Unmarshal(req.Params, &p)
+			pp := r.svcs.ConfigWatcher.Paths().Project(p.Name)
+			m, err := r.svcs.ConfigRW.ReadConf(pp.Conf)
+			if err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = m
+
+		case "config.setProjectConf":
+			var p struct {
+				Name    string            `json:"name"`
+				Changes map[string]string `json:"changes"`
+			}
+			json.Unmarshal(req.Params, &p)
+			pp := r.svcs.ConfigWatcher.Paths().Project(p.Name)
+			if err := r.svcs.ConfigRW.WriteConf(pp.Conf, p.Changes); err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = map[string]bool{"ok": true}
+
+		case "config.createProject":
+			var p struct {
+				Name    string `json:"name"`
+				RepoURL string `json:"repoUrl"`
+				Branch  string `json:"branch"`
+				Ports   int    `json:"ports"`
+			}
+			json.Unmarshal(req.Params, &p)
+			if p.Branch == "" {
+				p.Branch = "main"
+			}
+			res, err := r.mods.Config.CreateProject(ctx, p.Name, p.RepoURL, p.Branch, p.Ports)
+			if err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = res
+
+		case "config.deleteProject":
+			var p struct {
+				Name       string `json:"name"`
+				RemoveData bool   `json:"removeData"`
+			}
+			json.Unmarshal(req.Params, &p)
+			if err := r.mods.Config.DeleteProject(ctx, p.Name, p.RemoveData); err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = map[string]bool{"ok": true}
+
+		case "deployLogs.list":
+			var p struct {
+				Name string `json:"name"`
+			}
+			json.Unmarshal(req.Params, &p)
+			metas, err := r.svcs.DeployLog.List(p.Name)
+			if err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = metas
+
+		case "deployLogs.read":
+			var p struct {
+				Path string `json:"path"`
+			}
+			json.Unmarshal(req.Params, &p)
+			entries, err := r.svcs.DeployLog.ReadAll(p.Path)
+			if err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = entries
+
+		case "backup.run":
+			var p struct {
+				Name string `json:"name"`
+			}
+			json.Unmarshal(req.Params, &p)
+			res, err := r.mods.Backup.RunProject(ctx, p.Name)
+			if err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = res
+
+		case "backup.runSystem":
+			res, err := r.mods.Backup.RunSystem(ctx)
+			if err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = res
+
+		case "backup.list":
+			var p struct {
+				Name string `json:"name"`
+			}
+			json.Unmarshal(req.Params, &p)
+			entries, err := r.svcs.Backup.List(p.Name, fmt.Sprintf("/var/obstetrix/backups/%s", p.Name))
+			if err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = entries
+
+		case "port.list":
+			ports, err := r.svcs.ConfigRW.Ports()
+			if err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = ports
+
+		case "system.disk":
+			info, err := r.mods.System.DiskInfo()
+			if err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = info
+
+		case "system.daemonStatus":
+			result = map[string]interface{}{
+				"startedAt":  time.Now().UTC().Format(time.RFC3339),
+				"uptime":     "unknown",
+				"socketPath": r.svcs.ConfigRW.Paths().ObstetrixConf,
+				"configRoot": r.svcs.ConfigRW.Paths().Root,
+				"version":    "1.0.0",
+				"projects":   len(r.svcs.ConfigWatcher.All()),
+			}
+
+		case "logs.subscribe":
+			// Register this connection as a stream subscriber.
+			if unsubscribe != nil {
+				unsubscribe()
+			}
+			ch, unsub := r.mods.Events.Subscribe()
+			unsubscribe = unsub
+			go func() {
+				for event := range ch {
+					conn.SetDeadline(time.Now().Add(5 * time.Minute))
+					enc.Encode(map[string]interface{}{"stream": true, "event": event})
+				}
+			}()
+			result = map[string]bool{"ok": true}
+
+		default:
+			rpcErr = fmt.Sprintf("unknown method: %s", req.Method)
+		}
+
+		if rpcErr != "" {
+			slog.Warn("rpc error", "method", req.Method, "err", rpcErr)
+			enc.Encode(errResp(req.ID, rpcErr))
+		} else {
+			enc.Encode(rpcResponse{ID: req.ID, Result: result})
+		}
+	}
+}
+
+// ensure config.BuildEvent fields are used (suppress unused import)
+var _ = config.EventLog

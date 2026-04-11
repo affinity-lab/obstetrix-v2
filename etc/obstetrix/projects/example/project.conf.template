@@ -1,0 +1,31 @@
+# /etc/obstetrix/projects/{name}/project.conf
+# Rename this folder to your project name.
+# Permissions: root:obstetrix 640
+
+# Source repository
+REPO_URL=https://github.com/yourorg/yourproject
+BRANCH=main
+
+# Build command (run in _work/{name}/ as obstetrix-{name})
+BUILD_CMD=bun install && bun run build
+
+# Health check — leave empty to skip
+HEALTH_CHECK_URL=http://127.0.0.1:4000/health
+HEALTH_TIMEOUT=60
+
+# Auto-rollback on deploy failure
+ROLLBACK_ON_FAIL=true
+
+# Scaling (port assigned in obstetrix.conf under PORT.{name})
+DEFAULT_INSTANCES=1
+
+# Persistent directories within the deploy dir (never wiped by deploys)
+# Comma-separated, relative to /obstetrix-projects/{name}/
+PERSISTENT_DIRS=uploads,data
+
+# Backup overrides (optional — falls back to obstetrix.conf defaults)
+# BACKUP_SCHEDULE=0 3 * * *
+# BACKUP_RETENTION=7
+# BACKUP_DIR=/var/obstetrix/backups
+# BACKUP_INCLUDE_DATA=true
+# BACKUP_INCLUDE_ENV=true
