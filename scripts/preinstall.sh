@@ -98,7 +98,7 @@ _build_gui() {
   info "building gui..."
   (
     cd "$REPO_ROOT"
-    bun install --frozen-lockfile
+    bun install
     bun run build:shared
     bun run build:gui
   )
