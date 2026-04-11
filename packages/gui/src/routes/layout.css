@@ -2,7 +2,7 @@
 @import 'tailwindcss';
 @import '@atom-forge/ui/theme.css';
 
-@source '../../node_modules/@atom-forge/ui/dist';
+@source '../../../../node_modules/@atom-forge/ui/dist';
 
 /* Mobile safe-area insets */
 :root {
