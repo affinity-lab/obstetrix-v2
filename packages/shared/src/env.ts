@@ -27,7 +27,7 @@ export class Env {
 
     // Also merge process.env so environment variables override .env
     for (const [key, value] of Object.entries(process.env)) {
-      if (value !== undefined) {
+      if (typeof value === 'string') {
         this.data.set(key, value);
       }
     }
