@@ -93,10 +93,10 @@ Both are system users with no home directory and no login shell.
 
 ## GitHub Personal Access Token
 
-The orchestrator polls GitHub's API to detect new commits. The token needs:
+The orchestrator polls GitHub's API to detect new commits and downloads packages from the GitHub Package Registry. The token needs:
 
-- **Public repos:** `contents:read` scope (or a fine-grained token with "Contents: Read-only")
-- **Private repos:** classic token with `repo` scope, or fine-grained with "Contents: Read-only"
+- **Public repos:** `contents:read` and `read:packages` scopes (or fine-grained with "Contents: Read-only" and "Packages: Read-only")
+- **Private repos:** classic token with `repo` and `read:packages` scopes, or fine-grained with "Contents: Read-only" and "Packages: Read-only"
 
 The token is stored in `/etc/obstetrix/obstetrix.conf` (mode `root:obstetrix 640`).
 

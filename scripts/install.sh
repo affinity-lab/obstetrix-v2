@@ -52,9 +52,9 @@ _get_token() {
   elif [[ -z "$current_token" ]] || [[ $RESET_TOKEN -eq 1 ]]; then
     echo
     echo -e "${YELLOW}[obstetrix]${NC} This project requires a GitHub Personal Access Token to download private dependencies."
-    echo "Enter your GitHub PAT (repo or contents:read scope)."
+    echo "Enter your GitHub PAT (repo and read:packages scopes)."
     echo "Press Enter to skip (installation will likely fail if dependencies are private)."
-    read -r -s -p "GITHUB_TOKEN: " token; echo
+    read -r -s -p "GITHUB_TOKEN (input is hidden): " token; echo
     if [[ -n "$token" ]]; then
        export GITHUB_TOKEN="$token"
        export BUN_CONFIG_GITHUB_TOKEN="$token"
