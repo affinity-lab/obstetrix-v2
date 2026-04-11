@@ -1,5 +1,5 @@
 /* Import atom-forge styles once — never in individual components */
-@import '@atom-forge/ui/styles';
+@import '@atom-forge/ui/theme.css';
 
 @tailwind base;
 @tailwind components;
