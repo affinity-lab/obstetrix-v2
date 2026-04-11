@@ -98,6 +98,7 @@ _build_gui() {
   info "building gui..."
   (
     cd "$REPO_ROOT"
+    rm -f bun.lockb
     bun install
     bun run build:shared
     bun run build:gui
