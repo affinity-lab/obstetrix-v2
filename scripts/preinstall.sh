@@ -99,6 +99,7 @@ _build_gui() {
   (
     cd "$REPO_ROOT"
     rm -f bun.lockb
+    rm -rf node_modules/@atom-forge node_modules/@nano-forge
     bun install
     bun run build:shared
     bun run build:gui
