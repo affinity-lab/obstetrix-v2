@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { AtomForge } from '@atom-forge/ui';
+  import AtomForge from '$lib/AtomForge.svelte';
   import { onMount }   from 'svelte';
   import type { BuildEvent } from '@obstetrix/shared';
   import './layout.css';
