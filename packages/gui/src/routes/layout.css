@@ -1,10 +1,6 @@
 /* Import atom-forge styles once — never in individual components */
 @import '@atom-forge/ui/theme.css';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 /* Mobile safe-area insets */
 :root {
   --safe-area-inset-top: env(safe-area-inset-top, 0px);
