@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": { "dev": "vite dev", "build": "vite build", "preview": "vite preview" },
   "dependencies": {
-    "@atom-forge/ui":        "github:atom-forge/core",
-    "@atom-forge/tango-rpc": "github:atom-forge/tango",
+    "@atom-forge/ui":        "*",
+    "@atom-forge/tango-rpc": "*",
     "@obstetrix/shared":     "workspace:*"
   },
   "devDependencies": {
