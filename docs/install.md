@@ -24,9 +24,28 @@ sudo bash scripts/install.sh
 The installer runs in four phases:
 
 0. **Preparation** — checks for root access; prompts for or loads the `GITHUB_TOKEN` (required early for private dependencies).
-1. **Preinstall** — installs Go 1.22, Bun, git, nginx; creates system users and directories; compiles the orchestrator and CLI; builds the GUI (uses the token for `bun install`).
+1. **Preinstall** — installs Go 1.22, Bun, git, nginx; creates system users and directories; compiles the orchestrator and CLI; builds the GUI (uses the token for `bun install`); installs GUI runtime dependencies.
 2. **Install** — writes `/etc/obstetrix/obstetrix.conf` (skipped if already exists); saves the token to the config file.
 3. **Postinstall** — writes and enables systemd units; waits for the socket; smoke-tests `obstetrix-ctl status`.
+
+#### GUI build details (preinstall)
+
+Before running `bun install`, the build step deletes any local `bun.lockb` and evicts the `@atom-forge` and `@nano-forge` package directories from `node_modules`. This guarantees that private packages from the GitHub Package Registry are always resolved to their latest published versions rather than a cached older version.
+
+After the Vite build, `_install_gui` copies the output to `/opt/obstetrix/gui/`, strips workspace-only dependencies from `package.json`, then runs `bun install --production` inside `/opt/obstetrix/gui/` to install packages that adapter-node leaves unbundled (e.g. `@atom-forge/tango-rpc`).
+
+#### `SOCKET_PATH` and the GUI service
+
+`obstetrix.conf` contains `SOCKET_PATH` — the Unix socket path for the orchestrator. Both the orchestratord and the GUI service load this file via `EnvironmentFile`. However, `@sveltejs/adapter-node` also reads `SOCKET_PATH` and, when it is set, attempts to bind the HTTP server to a Unix socket instead of a TCP port.
+
+To prevent this conflict the GUI systemd unit includes:
+
+```ini
+UnsetEnvironment=SOCKET_PATH
+Environment=ORCHESTRATOR_SOCKET=/run/obstetrix/orchestrator.sock
+```
+
+`SOCKET_PATH` is removed from the GUI's environment so adapter-node uses `HOST`/`PORT`. The GUI server code reads `ORCHESTRATOR_SOCKET` (with the same default value) to locate the orchestrator socket.
 
 ### Flags
 

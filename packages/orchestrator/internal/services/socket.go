@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"os/user"
+	"strconv"
 	"time"
 
 	"github.com/yourorg/obstetrix/orchestrator/internal/config"
@@ -25,6 +27,11 @@ func (s *SocketService) Serve(ctx context.Context, dispatchFn func(net.Conn)) {
 	}
 	// Allow the obstetrix group (GUI user) to connect
 	os.Chmod(s.cfg.Path, 0660)
+	if grp, err := user.LookupGroup("obstetrix"); err == nil {
+		if gid, err := strconv.Atoi(grp.Gid); err == nil {
+			os.Lchown(s.cfg.Path, 0, gid)
+		}
+	}
 	defer ln.Close()
 
 	go func() { <-ctx.Done(); ln.Close() }()

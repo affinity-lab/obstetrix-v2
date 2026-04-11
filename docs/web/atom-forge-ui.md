@@ -10,7 +10,7 @@ Every page must be wrapped in `<AtomForge>`. This is done once in `src/routes/+l
 
 ```svelte
 <script lang="ts">
-  import { AtomForge } from '@atom-forge/ui';
+  import AtomForge from '$lib/AtomForge.svelte';
   let { children } = $props();
 </script>
 
@@ -18,6 +18,8 @@ Every page must be wrapped in `<AtomForge>`. This is done once in `src/routes/+l
   {@render children()}
 </AtomForge>
 ```
+
+**Import source:** `AtomForge` is imported from the local shim at `src/lib/AtomForge.svelte`, **not** from `@atom-forge/ui` directly. The published registry version of `@atom-forge/ui` does not yet re-export `AtomForge` from its main entry point. The local shim replicates the full component behaviour: dark/light theme setup, modal/popup/toast/drawer context managers, and overlay containers.
 
 **Critical:** `AtomForge` is a Svelte 5 runes component. The SvelteKit compiler must process it in runes mode. Do NOT add `@atom-forge` to any runes exclusion list in `svelte.config.js`. If the wrapper is excluded from runes, it silently breaks (no error, wrong rendering).
 
@@ -120,4 +122,17 @@ Example:
 import './layout.css';
 ```
 
-Do not import the atom-forge CSS in individual components — it is loaded once globally.
+The CSS file itself:
+
+```css
+@import 'tailwindcss';
+@import '@atom-forge/ui/theme.css';
+
+@source '../../node_modules/@atom-forge/ui/dist';
+```
+
+Key points:
+- The correct export path is `@atom-forge/ui/theme.css` — the package does **not** export `./styles`.
+- `@import 'tailwindcss'` uses Tailwind v4 syntax. The project uses `@tailwindcss/vite` (configured in `vite.config.ts`) — there is no `tailwind.config.ts` and no `@tailwind base/components/utilities` directives.
+- `@source` tells Tailwind v4 to scan the atom-forge dist directory for class names used in its components.
+- Do not import the atom-forge CSS in individual components — it is loaded once globally.
