@@ -19,6 +19,25 @@ const config: GuiServerConfig = {
   },
 };
 
-// Singletons — instantiated once when the SvelteKit server starts
-export const services: Services = createServices(config);
-export const modules: Modules  = createModules(services);
+// Lazy singletons — deferred until first request, not at import time.
+// This prevents the socket connection attempt during `vite build`.
+let _services: Services | null = null;
+let _modules:  Modules  | null = null;
+
+function getServices(): Services {
+  if (!_services) _services = createServices(config);
+  return _services;
+}
+
+function getModules(): Modules {
+  if (!_modules) _modules = createModules(getServices());
+  return _modules;
+}
+
+export const services = new Proxy({} as Services, {
+  get(_, key) { return getServices()[key as keyof Services]; },
+});
+
+export const modules = new Proxy({} as Modules, {
+  get(_, key) { return getModules()[key as keyof Modules]; },
+});
