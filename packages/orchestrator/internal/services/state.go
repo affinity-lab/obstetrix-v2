@@ -51,9 +51,9 @@ func (s *StateService) Write(st *config.ProjectState) error {
 func (s *StateService) ReadAll() ([]*config.ProjectState, error) {
 	entries, err := os.ReadDir(s.stateDir)
 	if err != nil {
-		return nil, nil
+		return []*config.ProjectState{}, nil
 	}
-	var states []*config.ProjectState
+	states := make([]*config.ProjectState, 0)
 	for _, e := range entries {
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
 			continue

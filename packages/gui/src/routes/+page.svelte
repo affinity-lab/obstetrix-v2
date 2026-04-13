@@ -10,7 +10,7 @@
 
   async function load() {
     try {
-      projects = await api.projects.list.$query(undefined);
+      projects = (await api.projects.list.$query(undefined)) ?? [];
     } catch (e) {
       error = String(e);
     } finally {

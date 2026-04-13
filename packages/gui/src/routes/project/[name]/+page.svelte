@@ -8,10 +8,10 @@
   let { data } = $props();
 
   const name = $derived($page.params.name);
-  let project   = $state<ProjectState>(data.project);
+  let project   = $derived<ProjectState>(data.project);
   let deploying = $state(false);
   let rollingBack = $state(false);
-  let scaleValue  = $state(data.scale.instances);
+  let scaleValue  = $derived(data.scale.instances);
   let scaling     = $state(false);
   let msg         = $state<string | null>(null);
 

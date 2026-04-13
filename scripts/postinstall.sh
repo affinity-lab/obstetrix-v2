@@ -34,6 +34,7 @@ StartLimitBurst=3
 
 RuntimeDirectory=${PLATFORM}
 RuntimeDirectoryMode=0770
+RuntimeDirectoryGroup=obstetrix
 RuntimeDirectoryPreserve=yes
 
 StandardOutput=journal
