@@ -102,12 +102,6 @@
           <Badge color={site.enabled ? 'accent' : undefined}>
             {site.enabled ? 'enabled' : 'disabled'}
           </Badge>
-          <label class="flex items-center gap-1.5 cursor-pointer" title="{site.enabled ? 'disable' : 'enable'} site">
-            <Switch
-              value={site.enabled}
-              bind:value={site.enabled}
-            />
-          </label>
           {#if toggling === site.name}
             <span class="text-muted-c text-xs">…</span>
           {:else}
