@@ -34,8 +34,11 @@ StartLimitBurst=3
 
 RuntimeDirectory=${PLATFORM}
 RuntimeDirectoryMode=0770
-RuntimeDirectoryGroup=obstetrix
 RuntimeDirectoryPreserve=yes
+
+# Give the obstetrix group (GUI user) access to the runtime directory.
+# RuntimeDirectoryGroup= does not apply when User=root, so we fix it post-start.
+ExecStartPost=/bin/chgrp obstetrix /run/${PLATFORM}
 
 StandardOutput=journal
 StandardError=journal
