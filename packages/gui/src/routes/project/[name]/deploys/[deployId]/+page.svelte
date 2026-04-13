@@ -16,11 +16,11 @@
 
   onMount(async () => {
     try {
-      const logs = await api.deployLogs.list.$query({ name });
-      const found = logs.find((l) => l.deployId === decodeURIComponent(deployId));
+      const logs = (await api.deployLogs.list.$query({ name })) ?? [];
+      const found = logs.find((l) => l.deployId === $page.params.deployId);
       if (found) {
         meta = found;
-        entries = await api.deployLogs.read.$query({ path: found.path });
+        entries = (await api.deployLogs.read.$query({ path: found.path })) ?? [];
       }
     } finally {
       loading = false;

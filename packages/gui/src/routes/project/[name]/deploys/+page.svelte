@@ -22,7 +22,7 @@
 
   async function load() {
     try {
-      logs = await api.deployLogs.list.$query({ name });
+      logs = (await api.deployLogs.list.$query({ name })) ?? [];
     } finally {
       loading = false;
     }

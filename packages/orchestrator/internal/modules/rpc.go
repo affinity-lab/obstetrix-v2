@@ -330,6 +330,9 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 				rpcErr = err.Error()
 				break
 			}
+			if metas == nil {
+				metas = []config.DeployLogMeta{}
+			}
 			result = metas
 
 		case "deployLogs.read":
@@ -341,6 +344,9 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 			if err != nil {
 				rpcErr = err.Error()
 				break
+			}
+			if entries == nil {
+				entries = []config.DeployLogEntry{}
 			}
 			result = entries
 
