@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import { Badge, Button } from '@atom-forge/ui';
   import { api } from '$lib/tango.js';
+  import { relativeTime, formatDuration } from '$lib/format.js';
   import type { ProjectState, ProjectStatus } from '@obstetrix/shared';
 
   let { data } = $props();
@@ -88,7 +89,9 @@
     <span class="text-muted-c">repo</span>
     <span class="text-muted-c text-xs truncate">{project.repoUrl}</span>
     <span class="text-muted-c">last deploy</span>
-    <span class="text-control-c">{project.lastDeployAt ?? 'never'}</span>
+    <span class="text-control-c">
+      {project.lastDeployAt ? relativeTime(project.lastDeployAt) : 'never'}
+    </span>
     <span class="text-muted-c">deploy ok</span>
     <span class="text-control-c">
       {project.lastDeployOk === null ? '—' : project.lastDeployOk ? 'yes' : 'no'}
@@ -169,7 +172,7 @@
           <span class="font-mono text-control-c">{record.sha.slice(0, 8)}</span>
           <span class="text-muted-c text-xs">{record.at}</span>
           <Badge color={record.ok ? 'accent' : 'red'}>{record.ok ? 'ok' : 'failed'}</Badge>
-          <span class="text-muted-c text-xs">{record.durationMs}ms</span>
+          <span class="text-muted-c text-xs">{formatDuration(record.durationMs)}</span>
         </div>
       {/each}
     </div>

@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import { Button, Switch }  from '@atom-forge/ui';
   import { api }     from '$lib/tango.js';
+  import { BUILD_TEMPLATES, templateToConf } from '$lib/templates.js';
 
   const name = $derived($page.params.name);
   type Tab = 'conf' | 'env' | 'npmrc';
@@ -17,6 +18,9 @@
   // Lazy load flags for env and npmrc tabs
   let envLoaded   = $state(false);
   let npmrcLoaded = $state(false);
+
+  // Template picker
+  let showTemplates = $state(false);
 
   // Delete state
   let showDelete  = $state(false);
@@ -41,6 +45,25 @@
       npmrcText = res.content;
       npmrcLoaded = true;
     }
+  }
+
+  function applyTemplate(tplId: string) {
+    const tpl = BUILD_TEMPLATES.find(t => t.id === tplId);
+    if (!tpl) return;
+    // Extract existing REPO_URL and BRANCH from current confText if present
+    let repoUrl = '';
+    let branch  = 'main';
+    for (const line of confText.split('\n')) {
+      const eq = line.indexOf('=');
+      if (eq <= 0) continue;
+      const k = line.slice(0, eq).trim();
+      const v = line.slice(eq + 1).trim();
+      if (k === 'REPO_URL') repoUrl = v;
+      if (k === 'BRANCH')   branch  = v;
+    }
+    confText = templateToConf(tpl, repoUrl, branch);
+    showTemplates = false;
+    msg = `template "${tpl.label}" applied — review and save`;
   }
 
   async function saveConf() {
@@ -125,11 +148,29 @@
              p-3 h-64 resize-none outline-none focus:border-accent"
       spellcheck="false"
     ></textarea>
-    <div class="flex gap-2">
-      <Button small onclick={saveConf} disabled={saving}>
-        {saving ? 'saving...' : 'save'}
-      </Button>
-    </div>
+
+    {#if showTemplates}
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {#each BUILD_TEMPLATES as tpl}
+          <button
+            onclick={() => applyTemplate(tpl.id)}
+            class="text-left px-3 py-2 rounded border border-canvas text-xs
+                   text-muted-c hover:text-control-c hover:border-accent transition-colors"
+          >
+            <div class="font-medium">{tpl.label}</div>
+            <div class="opacity-70 mt-0.5 font-mono">{tpl.buildCmd.slice(0, 30)}{tpl.buildCmd.length > 30 ? '…' : ''}</div>
+          </button>
+        {/each}
+      </div>
+      <Button ghost small onclick={() => showTemplates = false}>cancel</Button>
+    {:else}
+      <div class="flex gap-2">
+        <Button small onclick={saveConf} disabled={saving}>
+          {saving ? 'saving...' : 'save'}
+        </Button>
+        <Button ghost small onclick={() => showTemplates = true}>load template…</Button>
+      </div>
+    {/if}
 
   {:else if activeTab === 'env'}
     <textarea

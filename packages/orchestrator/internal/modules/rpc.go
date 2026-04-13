@@ -70,6 +70,8 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 		var result interface{}
 		var rpcErr string
 
+		slog.Debug("rpc call", "method", req.Method, "id", req.ID)
+
 		switch req.Method {
 
 		case "status.all":
@@ -108,6 +110,7 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 			if sha == "" {
 				sha, _ = r.svcs.GitHub.HeadSHA(proj.RepoURL, proj.Branch)
 			}
+			slog.Info("deploy triggered via rpc", "project", p.Name, "sha", sha)
 			r.mods.Poller.TriggerDeploy(ctx, proj, sha, false)
 			result = map[string]bool{"queued": true}
 
@@ -127,6 +130,7 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 				rpcErr = fmt.Sprintf("project %q not found", p.Name)
 				break
 			}
+			slog.Info("rollback triggered via rpc", "project", p.Name, "sha", *st.PreviousSHA)
 			r.mods.Poller.TriggerDeploy(ctx, proj, *st.PreviousSHA, true)
 			result = map[string]bool{"ok": true}
 
@@ -142,6 +146,7 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 				rpcErr = fmt.Sprintf("project %q not found", p.Name)
 				break
 			}
+			slog.Info("scale set via rpc", "project", p.Name, "instances", p.Instances)
 			res, err := r.mods.Deploy.Scale(ctx, proj, p.Instances)
 			if err != nil {
 				rpcErr = err.Error()
@@ -163,6 +168,7 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 
 		case "config.reload":
 			n := r.mods.Poller.ReloadProjects()
+			slog.Info("config reloaded via rpc", "count", n)
 			result = map[string]int{"reloaded": n}
 
 		case "config.setEnv":
@@ -288,11 +294,13 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 			if p.Branch == "" {
 				p.Branch = "main"
 			}
+			slog.Info("creating project via rpc", "project", p.Name, "repo", p.RepoURL, "ports", p.Ports)
 			res, err := r.mods.Config.CreateProject(ctx, p.Name, p.RepoURL, p.Branch, p.Ports)
 			if err != nil {
 				rpcErr = err.Error()
 				break
 			}
+			slog.Info("project created", "project", p.Name)
 			result = res
 
 		case "config.deleteProject":
@@ -301,10 +309,12 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 				RemoveData bool   `json:"removeData"`
 			}
 			json.Unmarshal(req.Params, &p)
+			slog.Info("deleting project via rpc", "project", p.Name, "removeData", p.RemoveData)
 			if err := r.mods.Config.DeleteProject(ctx, p.Name, p.RemoveData); err != nil {
 				rpcErr = err.Error()
 				break
 			}
+			slog.Info("project deleted", "project", p.Name)
 			result = map[string]bool{"ok": true}
 
 		case "deployLogs.list":

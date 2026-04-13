@@ -72,8 +72,8 @@
                     flex items-center justify-between text-sm">
           <span class="text-control-c font-mono">{p.name}</span>
           <span class="text-muted-c text-xs">
-            base {p.basePort} · {p.count} port{p.count === 1 ? '' : 's'} ·
-            {p.basePort}–{p.basePort + p.count - 1}
+            base {p.base} · {p.count} port{p.count === 1 ? '' : 's'} ·
+            {p.base}–{p.base + p.count - 1}
           </span>
         </div>
       {/each}
