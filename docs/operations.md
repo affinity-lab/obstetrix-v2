@@ -187,6 +187,8 @@ After enabling: `sudo nginx -t && sudo systemctl reload nginx`
 | `cannot connect to orchestrator` | Service not running | `systemctl start obstetrix-orchestratord` |
 | `GITHUB_TOKEN is required` | Token not set | `sudo bash scripts/install.sh --reset-token` |
 | Socket not created after 15s | Config error at startup | `journalctl -u obstetrix-orchestratord -n 50` |
+| Project deploys automatically on every poll tick | `CurrentSHA` is nil — project has never been deployed | Trigger an explicit first deploy from the GUI or CLI; the poller skips nil-SHA projects intentionally |
+| Project keeps auto-deploying after config save | `AUTO_DEPLOY=true` and a new commit exists | Either deploy manually to set `CurrentSHA`, or set `AUTO_DEPLOY=false` in `project.conf` via the deploy settings tab |
 | Deploy stuck at `git fetch` | Network / token issue | Check token scopes; check repo URL in `project.conf` |
 | Health check timeout | App not starting | Check `journalctl -u myapp@4000.service -n 50`; verify `start.command` |
 | GUI 502 Bad Gateway | GUI process crashing on startup | Check `journalctl -u obstetrix-gui -n 50`; usually a socket connect error causing an unhandled exception |
