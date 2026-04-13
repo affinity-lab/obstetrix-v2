@@ -1,6 +1,12 @@
 import { handler } from '$lib/server/tango-api.js';
 import type { Handle, RequestEvent } from '@sveltejs/kit';
 
+// Bun 1.x crashes on unhandled promise rejections by default.
+// Catch them here so transient socket errors don't bring down the process.
+process.on('unhandledRejection', (reason: unknown) => {
+  console.error('[unhandledRejection]', reason);
+});
+
 const API_ROUTES: Record<string, (event: RequestEvent) => Response | Promise<Response>> = {
   '/api/tango': handler,
 };
