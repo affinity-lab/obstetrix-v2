@@ -113,6 +113,34 @@ export class OrchestratorModule {
     return this.svcs.socketClient.call('system.daemonStatus', null);
   }
 
+  listNginxConfigs(): Promise<{ name: string; enabled: boolean }[]> {
+    return this.svcs.socketClient.call('nginx.list', null);
+  }
+
+  getNginxConfig(name: string): Promise<{ content: string }> {
+    return this.svcs.socketClient.call('nginx.get', { name });
+  }
+
+  setNginxConfig(name: string, content: string): Promise<{ ok: boolean; output: string }> {
+    return this.svcs.socketClient.call('nginx.set', { name, content });
+  }
+
+  testNginx(): Promise<{ ok: boolean; output: string }> {
+    return this.svcs.socketClient.call('nginx.test', null);
+  }
+
+  reloadNginx(): Promise<{ ok: boolean; output: string }> {
+    return this.svcs.socketClient.call('nginx.reload', null);
+  }
+
+  enableNginxSite(name: string): Promise<{ ok: boolean }> {
+    return this.svcs.socketClient.call('nginx.enable', { name });
+  }
+
+  disableNginxSite(name: string): Promise<{ ok: boolean }> {
+    return this.svcs.socketClient.call('nginx.disable', { name });
+  }
+
   /**
    * Subscribe to build events for a project.
    * Returns an unsubscribe function. Caller must call it when the SSE

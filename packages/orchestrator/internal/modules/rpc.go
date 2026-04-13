@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"os"
+	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/yourorg/obstetrix/orchestrator/internal/config"
@@ -412,6 +415,122 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 					enc.Encode(map[string]interface{}{"stream": true, "event": event})
 				}
 			}()
+			result = map[string]bool{"ok": true}
+
+		case "nginx.list":
+			entries, err := os.ReadDir("/etc/nginx/sites-available")
+			if err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			type nginxSite struct {
+				Name    string `json:"name"`
+				Enabled bool   `json:"enabled"`
+			}
+			sites := make([]nginxSite, 0, len(entries))
+			for _, e := range entries {
+				if e.IsDir() {
+					continue
+				}
+				name := e.Name()
+				_, statErr := os.Lstat("/etc/nginx/sites-enabled/" + name)
+				sites = append(sites, nginxSite{Name: name, Enabled: statErr == nil})
+			}
+			result = sites
+
+		case "nginx.get":
+			var p struct {
+				Name string `json:"name"`
+			}
+			json.Unmarshal(req.Params, &p)
+			if strings.ContainsAny(p.Name, "/\\.") {
+				rpcErr = "invalid config name"
+				break
+			}
+			data, err := os.ReadFile("/etc/nginx/sites-available/" + p.Name)
+			if err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = map[string]string{"content": string(data)}
+
+		case "nginx.set":
+			var p struct {
+				Name    string `json:"name"`
+				Content string `json:"content"`
+			}
+			json.Unmarshal(req.Params, &p)
+			if strings.ContainsAny(p.Name, "/\\.") {
+				rpcErr = "invalid config name"
+				break
+			}
+			path := "/etc/nginx/sites-available/" + p.Name
+			// Back up existing content so we can restore on nginx -t failure.
+			existing, _ := os.ReadFile(path)
+			if err := os.WriteFile(path, []byte(p.Content), 0644); err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			out, err := exec.Command("nginx", "-t").CombinedOutput()
+			if err != nil {
+				// Restore backup.
+				if existing != nil {
+					os.WriteFile(path, existing, 0644)
+				} else {
+					os.Remove(path)
+				}
+				rpcErr = "nginx -t failed: " + strings.TrimSpace(string(out))
+				break
+			}
+			slog.Info("nginx config saved", "site", p.Name)
+			result = map[string]interface{}{"ok": true, "output": strings.TrimSpace(string(out))}
+
+		case "nginx.test":
+			out, err := exec.Command("nginx", "-t").CombinedOutput()
+			result = map[string]interface{}{"ok": err == nil, "output": strings.TrimSpace(string(out))}
+
+		case "nginx.reload":
+			out, err := exec.Command("systemctl", "reload", "nginx").CombinedOutput()
+			if err != nil {
+				rpcErr = "reload failed: " + strings.TrimSpace(string(out))
+				break
+			}
+			slog.Info("nginx reloaded via rpc")
+			result = map[string]interface{}{"ok": true, "output": strings.TrimSpace(string(out))}
+
+		case "nginx.enable":
+			var p struct {
+				Name string `json:"name"`
+			}
+			json.Unmarshal(req.Params, &p)
+			if strings.ContainsAny(p.Name, "/\\.") {
+				rpcErr = "invalid config name"
+				break
+			}
+			src := "/etc/nginx/sites-available/" + p.Name
+			dst := "/etc/nginx/sites-enabled/" + p.Name
+			os.Remove(dst)
+			if err := os.Symlink(src, dst); err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			slog.Info("nginx site enabled", "site", p.Name)
+			result = map[string]bool{"ok": true}
+
+		case "nginx.disable":
+			var p struct {
+				Name string `json:"name"`
+			}
+			json.Unmarshal(req.Params, &p)
+			if strings.ContainsAny(p.Name, "/\\.") {
+				rpcErr = "invalid config name"
+				break
+			}
+			if err := os.Remove("/etc/nginx/sites-enabled/" + p.Name); err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			slog.Info("nginx site disabled", "site", p.Name)
 			result = map[string]bool{"ok": true}
 
 		default:

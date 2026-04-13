@@ -104,6 +104,9 @@
     <Button small ghost onclick={() => location.href = '/settings/secrets'}>
       edit obstetrix.conf
     </Button>
+    <Button small ghost onclick={() => location.href = '/settings/nginx'}>
+      nginx
+    </Button>
   </div>
   {#if reloadMsg}<p class="text-muted-c text-xs">{reloadMsg}</p>{/if}
 </div>

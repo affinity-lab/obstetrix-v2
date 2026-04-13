@@ -98,6 +98,29 @@ const api = {
     daemonStatus: tango.query(async (_args: undefined) =>
       modules.orchestrator.daemonStatus()),
   },
+
+  nginx: {
+    list: tango.query(async (_args: undefined): Promise<{ name: string; enabled: boolean }[]> =>
+      modules.orchestrator.listNginxConfigs()),
+
+    get: tango.query(async (args: { name: string }): Promise<{ content: string }> =>
+      modules.orchestrator.getNginxConfig(args.name)),
+
+    set: tango.command(async (args: { name: string; content: string }): Promise<{ ok: boolean; output: string }> =>
+      modules.orchestrator.setNginxConfig(args.name, args.content)),
+
+    test: tango.query(async (_args: undefined): Promise<{ ok: boolean; output: string }> =>
+      modules.orchestrator.testNginx()),
+
+    reload: tango.command(async (_args: undefined): Promise<{ ok: boolean; output: string }> =>
+      modules.orchestrator.reloadNginx()),
+
+    enable: tango.command(async (args: { name: string }): Promise<{ ok: boolean }> =>
+      modules.orchestrator.enableNginxSite(args.name)),
+
+    disable: tango.command(async (args: { name: string }): Promise<{ ok: boolean }> =>
+      modules.orchestrator.disableNginxSite(args.name)),
+  },
 };
 
 export const [handler, definition] = createHandler(api);
