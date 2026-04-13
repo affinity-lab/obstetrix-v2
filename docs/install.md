@@ -47,6 +47,16 @@ Environment=ORCHESTRATOR_SOCKET=/run/obstetrix/orchestrator.sock
 
 `SOCKET_PATH` is removed from the GUI's environment so adapter-node uses `HOST`/`PORT`. The GUI server code reads `ORCHESTRATOR_SOCKET` (with the same default value) to locate the orchestrator socket.
 
+#### `/run/obstetrix/` directory group
+
+The orchestrator's runtime directory `/run/obstetrix/` must be searchable by the `obstetrix` user so the GUI can reach the socket inside it. Because the orchestratord service runs as `root`, systemd's `RuntimeDirectoryGroup=` directive has no effect — so the unit instead uses:
+
+```ini
+ExecStartPost=/bin/chgrp obstetrix /run/obstetrix
+```
+
+This runs immediately after the orchestrator process starts, setting the directory group to `obstetrix` before the GUI attempts to connect. The result is `root:obstetrix 770` — matching the directories table above. Without this, the GUI gets `ENOENT` when connecting to the socket (Linux returns ENOENT rather than EACCES when directory search permission is missing).
+
 ### Flags
 
 | Flag | Description |

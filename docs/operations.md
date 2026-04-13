@@ -189,7 +189,10 @@ After enabling: `sudo nginx -t && sudo systemctl reload nginx`
 | Socket not created after 15s | Config error at startup | `journalctl -u obstetrix-orchestratord -n 50` |
 | Deploy stuck at `git fetch` | Network / token issue | Check token scopes; check repo URL in `project.conf` |
 | Health check timeout | App not starting | Check `journalctl -u myapp@4000.service -n 50`; verify `start.command` |
-| GUI not loading | GUI service down | `systemctl restart obstetrix-gui`; check `journalctl -u obstetrix-gui` |
+| GUI 502 Bad Gateway | GUI process crashing on startup | Check `journalctl -u obstetrix-gui -n 50`; usually a socket connect error causing an unhandled exception |
+| GUI 502 immediately after orchestratord restart | `/run/obstetrix/` reverted to `root:root` group | The `ExecStartPost=/bin/chgrp obstetrix /run/obstetrix` line must be present in the orchestratord unit; reinstall or patch the unit manually |
+| GUI gets `ENOENT` connecting to socket despite socket existing | `/run/obstetrix/` directory not searchable by obstetrix user | `sudo chgrp obstetrix /run/obstetrix` (temporary); permanent fix: ensure orchestratord unit has `ExecStartPost=/bin/chgrp obstetrix /run/obstetrix` |
+| SSE (`/api/events`) not connecting in Firefox | nginx proxy uses HTTP/2 and forwards hop-by-hop headers | Ensure the SSE location block uses `proxy_buffering off` and does not set `Connection: keep-alive` (forbidden in HTTP/2) |
 | SSE disconnects frequently | nginx buffering | Add `proxy_buffering off` and `proxy_read_timeout 3600s` to SSE location block |
 | `no project configs configured` on dashboard | No valid `project.conf` | Ensure `REPO_URL` and `BUILD_CMD` are set; run `obstetrix-ctl config reload` |
 | Instance enters failed state | Crash loop | `systemctl reset-failed myapp@4000.service` then investigate with `journalctl` |

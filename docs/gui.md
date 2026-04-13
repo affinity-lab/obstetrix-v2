@@ -158,3 +158,5 @@ The GUI maintains a persistent SSE connection to `/api/events` throughout the se
 | `log` | Streams to the live log page for the relevant project |
 
 The SSE connection reconnects automatically if dropped.
+
+> **nginx / HTTP/2 note:** The `/api/events` response must not include `Connection: keep-alive` — that header is forbidden in HTTP/2 and causes Firefox to abort the connection (`NS_BINDING_ABORTED`) while Chrome silently ignores it. The nginx config in [install.md](install.md#nginx-reverse-proxy) uses a dedicated unbuffered location block for SSE routes; if you customise the proxy config, ensure `proxy_buffering off` and `proxy_read_timeout 3600s` are set for those paths.
