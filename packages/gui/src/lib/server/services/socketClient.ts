@@ -30,15 +30,27 @@ export class SocketClientService extends EventEmitter {
   }
 
   private connect() {
-    let sock: net.Socket;
-    try {
-      sock = net.createConnection(this.socketPath);
-    } catch (err) {
-      console.error('[socket] connect failed:', (err as Error).message);
-      this.scheduleReconnect();
-      return;
-    }
+    // Create socket and register error/close handlers BEFORE connecting.
+    // Bun emits 'error' synchronously on connect failure; if no listener is
+    // registered yet, EventEmitter re-throws it as an uncaught exception that
+    // bypasses any surrounding try-catch.
+    const sock = new net.Socket();
     this.socket = sock;
+
+    sock.on('error', (err) => {
+      console.error('[socket] error:', err.message);
+      this.socket = null;
+      this.scheduleReconnect();
+    });
+
+    sock.on('close', () => {
+      // Reject all pending calls
+      for (const [, p] of this.pending) {
+        p.reject(new Error('socket closed'));
+      }
+      this.pending.clear();
+      this.scheduleReconnect();
+    });
 
     const rl = readline.createInterface({ input: sock });
 
@@ -67,19 +79,14 @@ export class SocketClientService extends EventEmitter {
       }
     });
 
-    sock.on('error', (err) => {
-      console.error('[socket] error:', err.message);
+    try {
+      sock.connect(this.socketPath);
+    } catch (err) {
+      console.error('[socket] connect failed:', (err as Error).message);
+      sock.destroy();
+      this.socket = null;
       this.scheduleReconnect();
-    });
-
-    sock.on('close', () => {
-      // Reject all pending calls
-      for (const [, p] of this.pending) {
-        p.reject(new Error('socket closed'));
-      }
-      this.pending.clear();
-      this.scheduleReconnect();
-    });
+    }
   }
 
   private scheduleReconnect() {
@@ -92,7 +99,7 @@ export class SocketClientService extends EventEmitter {
 
   call<T = unknown>(method: string, params: unknown = null): Promise<T> {
     return new Promise((resolve, reject) => {
-      if (!this.socket || this.socket.destroyed) {
+      if (!this.socket || this.socket.destroyed || !this.socket.writable) {
         return reject(new Error('socket not connected'));
       }
       const id = ++this.idCounter;
