@@ -30,7 +30,14 @@ export class SocketClientService extends EventEmitter {
   }
 
   private connect() {
-    const sock = net.createConnection(this.socketPath);
+    let sock: net.Socket;
+    try {
+      sock = net.createConnection(this.socketPath);
+    } catch (err) {
+      console.error('[socket] connect failed:', (err as Error).message);
+      this.scheduleReconnect();
+      return;
+    }
     this.socket = sock;
 
     const rl = readline.createInterface({ input: sock });
