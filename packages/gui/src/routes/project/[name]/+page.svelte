@@ -8,12 +8,17 @@
   let { data } = $props();
 
   const name = $derived($page.params.name);
-  let project   = $derived<ProjectState>(data.project);
-  let deploying = $state(false);
+  let project    = $derived<ProjectState>(data.project);
+  let deploying  = $state(false);
   let rollingBack = $state(false);
   let scaleValue  = $derived(data.scale.instances);
   let scaling     = $state(false);
   let msg         = $state<string | null>(null);
+
+  // Deploy with specific SHA
+  let showShaInput = $state(false);
+  let deploySha    = $state('');
+  let deployingSha = $state(false);
 
   async function deploy() {
     deploying = true; msg = null;
@@ -22,6 +27,19 @@
       msg = 'deploy queued — watch logs for progress';
     } catch (e) { msg = `error: ${e}`; }
     finally { deploying = false; }
+  }
+
+  async function deployWithSha() {
+    const sha = deploySha.trim();
+    if (!sha) return;
+    deployingSha = true; msg = null;
+    try {
+      await api.deploy.trigger.$command({ name, sha });
+      msg = `deploy queued for ${sha.slice(0, 8)} — watch logs for progress`;
+      showShaInput = false;
+      deploySha = '';
+    } catch (e) { msg = `error: ${e}`; }
+    finally { deployingSha = false; }
   }
 
   async function rollback() {
@@ -77,11 +95,18 @@
     </span>
     <span class="text-muted-c">instances</span>
     <span class="text-control-c">{project.instances} / {project.portCount}</span>
+    {#if project.healthCheckUrl}
+      <span class="text-muted-c">health check</span>
+      <span class="text-muted-c text-xs truncate">{project.healthCheckUrl}</span>
+    {/if}
   </div>
 
   <div class="flex gap-2 flex-wrap">
     <Button onclick={deploy} disabled={deploying}>
       {deploying ? 'deploying...' : 'deploy now'}
+    </Button>
+    <Button ghost small onclick={() => { showShaInput = !showShaInput; deploySha = ''; }}>
+      deploy sha…
     </Button>
     <Button ghost onclick={() => location.href = `/project/${name}/logs`}>view logs</Button>
     <Button ghost onclick={() => location.href = `/project/${name}/deploys`}>deploys</Button>
@@ -92,6 +117,24 @@
       </Button>
     {/if}
   </div>
+
+  {#if showShaInput}
+    <div class="bg-raised border border-canvas rounded-lg px-4 py-4 flex flex-col gap-3">
+      <span class="text-control-c text-sm font-medium">deploy specific SHA</span>
+      <input
+        bind:value={deploySha}
+        placeholder="full or short SHA"
+        class="bg-base border border-canvas rounded font-mono text-xs text-control-c
+               px-3 py-2 outline-none focus:border-accent"
+      />
+      <div class="flex gap-2">
+        <Button small onclick={deployWithSha} disabled={deployingSha || !deploySha.trim()}>
+          {deployingSha ? 'deploying…' : 'deploy'}
+        </Button>
+        <Button ghost small onclick={() => { showShaInput = false; deploySha = ''; }}>cancel</Button>
+      </div>
+    </div>
+  {/if}
 
   <!-- Scale slider -->
   <div class="bg-raised border border-canvas rounded-lg px-4 py-4 flex flex-col gap-3">

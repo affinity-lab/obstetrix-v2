@@ -48,6 +48,15 @@ const api = {
     setEnv: tango.command(async (args: { name: string; content: string }): Promise<{ ok: boolean }> =>
       modules.orchestrator.setEnv(args.name, args.content)),
 
+    getEnv: tango.query(async (args: { name: string }): Promise<{ content: string }> =>
+      modules.orchestrator.getEnv(args.name)),
+
+    getNpmrc: tango.query(async (args: { name: string }): Promise<{ content: string }> =>
+      modules.orchestrator.getNpmrc(args.name)),
+
+    setNpmrc: tango.command(async (args: { name: string; content: string }): Promise<{ ok: boolean }> =>
+      modules.orchestrator.setNpmrc(args.name, args.content)),
+
     syncEnv: tango.command(async (args: { name: string }): Promise<{ ok: boolean }> =>
       modules.orchestrator.syncEnv(args.name)),
 
@@ -85,6 +94,9 @@ const api = {
   system: {
     disk: tango.query(async (_args: undefined): Promise<DiskInfo[]> =>
       modules.orchestrator.diskInfo()),
+
+    daemonStatus: tango.query(async (_args: undefined) =>
+      modules.orchestrator.daemonStatus()),
   },
 };
 

@@ -8,6 +8,15 @@
   let loading  = $state(true);
   let error    = $state<string | null>(null);
 
+  // New project form
+  let showCreate  = $state(false);
+  let newName     = $state('');
+  let newRepoUrl  = $state('');
+  let newBranch   = $state('main');
+  let newPorts    = $state(4);
+  let creating    = $state(false);
+  let createError = $state<string | null>(null);
+
   async function load() {
     try {
       projects = (await api.projects.list.$query(undefined)) ?? [];
@@ -49,6 +58,37 @@
     await api.deploy.trigger.$command({ name });
   }
 
+  function cancelCreate() {
+    showCreate = false;
+    newName = ''; newRepoUrl = ''; newBranch = 'main'; newPorts = 4;
+    createError = null;
+  }
+
+  async function createProject() {
+    createError = null;
+    if (!/^[a-z0-9-]+$/.test(newName)) {
+      createError = 'name must be lowercase letters, numbers, and hyphens only';
+      return;
+    }
+    if (!newRepoUrl.trim()) {
+      createError = 'repo URL is required';
+      return;
+    }
+    creating = true;
+    try {
+      await api.config.createProject.$command({
+        name: newName.trim(),
+        repoUrl: newRepoUrl.trim(),
+        branch: newBranch.trim() || 'main',
+        ports: newPorts,
+      });
+      location.href = `/settings/project/${newName.trim()}`;
+    } catch (e) {
+      createError = String(e);
+      creating = false;
+    }
+  }
+
   function statusColor(status: ProjectStatus): 'accent' | 'red' | 'blue' | undefined {
     switch (status) {
       case 'running':  return 'accent';
@@ -68,6 +108,68 @@
     return `${Math.floor(hrs / 24)}d ago`;
   }
 </script>
+
+<div class="flex items-center justify-between mb-4">
+  <span class="text-muted-c text-xs uppercase tracking-wide">projects</span>
+  {#if !showCreate}
+    <Button small onclick={() => showCreate = true}>new project</Button>
+  {/if}
+</div>
+
+{#if showCreate}
+  <div class="bg-raised border border-canvas rounded-lg px-4 py-4 flex flex-col gap-3 mb-4">
+    <span class="text-control-c text-sm font-medium">new project</span>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div class="flex flex-col gap-1">
+        <label class="text-muted-c text-xs">name</label>
+        <input
+          bind:value={newName}
+          placeholder="my-app"
+          class="bg-base border border-canvas rounded font-mono text-xs text-control-c
+                 px-3 py-2 outline-none focus:border-accent"
+        />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-muted-c text-xs">repo URL</label>
+        <input
+          bind:value={newRepoUrl}
+          placeholder="https://github.com/org/repo"
+          class="bg-base border border-canvas rounded text-xs text-control-c
+                 px-3 py-2 outline-none focus:border-accent"
+        />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-muted-c text-xs">branch</label>
+        <input
+          bind:value={newBranch}
+          placeholder="main"
+          class="bg-base border border-canvas rounded text-xs text-control-c
+                 px-3 py-2 outline-none focus:border-accent"
+        />
+      </div>
+      <div class="flex flex-col gap-1">
+        <label class="text-muted-c text-xs">ports (max instances)</label>
+        <input
+          type="number"
+          bind:value={newPorts}
+          min="1"
+          max="16"
+          class="bg-base border border-canvas rounded text-xs text-control-c
+                 px-3 py-2 outline-none focus:border-accent"
+        />
+      </div>
+    </div>
+    {#if createError}
+      <p class="text-red-400 text-xs">{createError}</p>
+    {/if}
+    <div class="flex gap-2">
+      <Button small onclick={createProject} disabled={creating}>
+        {creating ? 'creating…' : 'create'}
+      </Button>
+      <Button ghost small onclick={cancelCreate} disabled={creating}>cancel</Button>
+    </div>
+  </div>
+{/if}
 
 {#if loading}
   <p class="text-muted-c text-sm">loading...</p>

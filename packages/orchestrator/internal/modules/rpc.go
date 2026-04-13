@@ -178,6 +178,45 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 			}
 			result = map[string]bool{"ok": true}
 
+		case "config.getEnv":
+			var p struct {
+				Name string `json:"name"`
+			}
+			json.Unmarshal(req.Params, &p)
+			pp := r.svcs.ConfigWatcher.Paths().Project(p.Name)
+			content, err := r.svcs.ConfigRW.ReadRaw(pp.Env)
+			if err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = map[string]string{"content": content}
+
+		case "config.getNpmrc":
+			var p struct {
+				Name string `json:"name"`
+			}
+			json.Unmarshal(req.Params, &p)
+			pp := r.svcs.ConfigWatcher.Paths().Project(p.Name)
+			content, err := r.svcs.ConfigRW.ReadRaw(pp.Npmrc)
+			if err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = map[string]string{"content": content}
+
+		case "config.setNpmrc":
+			var p struct {
+				Name    string `json:"name"`
+				Content string `json:"content"`
+			}
+			json.Unmarshal(req.Params, &p)
+			pp := r.svcs.ConfigWatcher.Paths().Project(p.Name)
+			if err := r.svcs.ConfigRW.WriteRaw(pp.Npmrc, p.Content); err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = map[string]bool{"ok": true}
+
 		case "config.syncEnv":
 			var p struct {
 				Name string `json:"name"`

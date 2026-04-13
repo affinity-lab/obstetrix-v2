@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page }    from '$app/stores';
   import { onMount } from 'svelte';
-  import { Button }  from '@atom-forge/ui';
+  import { Button, Switch }  from '@atom-forge/ui';
   import { api }     from '$lib/tango.js';
 
   const name = $derived($page.params.name);
@@ -14,10 +14,34 @@
   let syncing    = $state(false);
   let msg        = $state<string | null>(null);
 
+  // Lazy load flags for env and npmrc tabs
+  let envLoaded   = $state(false);
+  let npmrcLoaded = $state(false);
+
+  // Delete state
+  let showDelete  = $state(false);
+  let removeData  = $state(false);
+  let confirmName = $state('');
+  let deleting    = $state(false);
+
   onMount(async () => {
     const conf = await api.config.getProjectConf.$query({ name });
     confText = Object.entries(conf).map(([k, v]) => `${k}=${v}`).join('\n');
   });
+
+  async function onTabChange(tab: Tab) {
+    activeTab = tab;
+    if (tab === 'env' && !envLoaded) {
+      const res = await api.config.getEnv.$query({ name });
+      envText = res.content;
+      envLoaded = true;
+    }
+    if (tab === 'npmrc' && !npmrcLoaded) {
+      const res = await api.config.getNpmrc.$query({ name });
+      npmrcText = res.content;
+      npmrcLoaded = true;
+    }
+  }
 
   async function saveConf() {
     saving = true; msg = null;
@@ -42,6 +66,15 @@
     finally { saving = false; }
   }
 
+  async function saveNpmrc() {
+    saving = true; msg = null;
+    try {
+      await api.config.setNpmrc.$command({ name, content: npmrcText });
+      msg = 'saved';
+    } catch (e) { msg = `error: ${e}`; }
+    finally { saving = false; }
+  }
+
   async function syncEnvNow() {
     syncing = true; msg = null;
     try {
@@ -49,6 +82,14 @@
       msg = 'env synced and services restarted';
     } catch (e) { msg = `error: ${e}`; }
     finally { syncing = false; }
+  }
+
+  async function deleteProject() {
+    deleting = true;
+    try {
+      await api.config.deleteProject.$command({ name, removeData });
+      location.href = '/';
+    } catch (e) { msg = `error: ${e}`; deleting = false; }
   }
 
   const tabs: { id: Tab; label: string }[] = [
@@ -68,7 +109,7 @@
   <div class="flex gap-1 border-b border-canvas">
     {#each tabs as tab}
       <button
-        onclick={() => activeTab = tab.id}
+        onclick={() => onTabChange(tab.id)}
         class="px-3 py-2 text-xs font-mono transition-colors
                {activeTab === tab.id
                  ? 'text-control-c border-b-2 border-accent -mb-px'
@@ -115,7 +156,7 @@
              p-3 h-64 resize-none outline-none focus:border-accent"
       spellcheck="false"
     ></textarea>
-    <Button small onclick={saveEnv} disabled={saving}>
+    <Button small onclick={saveNpmrc} disabled={saving}>
       {saving ? 'saving...' : 'save'}
     </Button>
   {/if}
@@ -123,4 +164,40 @@
   {#if msg}
     <p class="text-muted-c text-xs">{msg}</p>
   {/if}
+
+  <!-- Danger zone -->
+  <div class="border-t border-canvas pt-4 flex flex-col gap-3">
+    <span class="text-muted-c text-xs uppercase tracking-wide">danger zone</span>
+    {#if !showDelete}
+      <div>
+        <Button destructive small onclick={() => showDelete = true}>delete project…</Button>
+      </div>
+    {:else}
+      <p class="text-muted-c text-xs">
+        Stops all instances and removes config and port allocation.
+        App directories are {removeData ? 'deleted' : 'kept'}.
+        State files and deploy logs are always preserved.
+      </p>
+      <label class="flex items-center gap-2 text-xs text-muted-c cursor-pointer">
+        <Switch bind:value={removeData} />
+        remove app data (/obstetrix-projects/{name}/)
+      </label>
+      <input
+        bind:value={confirmName}
+        placeholder="type project name to confirm"
+        class="bg-raised border border-canvas rounded font-mono text-xs text-control-c
+               px-3 py-2 outline-none focus:border-accent"
+      />
+      <div class="flex gap-2">
+        <Button destructive small
+          disabled={confirmName !== name || deleting}
+          onclick={deleteProject}>
+          {deleting ? 'deleting…' : 'delete'}
+        </Button>
+        <Button ghost small onclick={() => { showDelete = false; confirmName = ''; removeData = false; }}>
+          cancel
+        </Button>
+      </div>
+    {/if}
+  </div>
 </div>
