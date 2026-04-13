@@ -22,6 +22,7 @@
   let healthUrl     = $state('');
   let healthTimeout = $state(60);
   let rollbackOnFail = $state(true);
+  let autoDeploy     = $state(true);
   let defaultInstances = $state(1);
   let persistentDirs = $state('');
 
@@ -70,6 +71,7 @@
     healthUrl        = conf['HEALTH_CHECK_URL']   ?? '';
     healthTimeout    = parseInt(conf['HEALTH_TIMEOUT'] ?? '60', 10) || 60;
     rollbackOnFail   = (conf['ROLLBACK_ON_FAIL']  ?? 'true') !== 'false';
+    autoDeploy       = (conf['AUTO_DEPLOY']        ?? 'true') !== 'false';
     defaultInstances = parseInt(conf['DEFAULT_INSTANCES'] ?? '1', 10) || 1;
     persistentDirs   = conf['PERSISTENT_DIRS']    ?? '';
   }
@@ -108,6 +110,7 @@
         HEALTH_CHECK_URL:   healthUrl,
         HEALTH_TIMEOUT:     String(healthTimeout),
         ROLLBACK_ON_FAIL:   rollbackOnFail ? 'true' : 'false',
+        AUTO_DEPLOY:        autoDeploy ? 'true' : 'false',
         DEFAULT_INSTANCES:  String(defaultInstances),
         PERSISTENT_DIRS:    persistentDirs,
       };
@@ -335,11 +338,17 @@
           <p class="text-muted-c text-xs">how many instances start on first deploy</p>
         </div>
         <div class="flex flex-col gap-2">
-          <label class="text-muted-c text-xs font-medium uppercase tracking-wide">rollback on fail</label>
+          <label class="text-muted-c text-xs font-medium uppercase tracking-wide">behaviour</label>
           <label class="flex items-center gap-2 cursor-pointer">
             <Switch bind:value={rollbackOnFail} />
             <span class="text-xs text-muted-c">
               {rollbackOnFail ? 'auto-rollback to previous SHA on failure' : 'leave failed — no rollback'}
+            </span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <Switch bind:value={autoDeploy} />
+            <span class="text-xs text-muted-c">
+              {autoDeploy ? 'auto-deploy new commits from GitHub' : 'manual deploy only'}
             </span>
           </label>
         </div>

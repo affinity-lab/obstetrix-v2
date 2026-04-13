@@ -113,7 +113,7 @@
     </Button>
     <Button ghost onclick={() => location.href = `/project/${name}/logs`}>view logs</Button>
     <Button ghost onclick={() => location.href = `/project/${name}/deploys`}>deploys</Button>
-    <Button ghost onclick={() => location.href = `/settings/project/${name}`}>settings</Button>
+    <Button ghost onclick={() => location.href = `/settings/project/${name}`}>deploy settings</Button>
     {#if project.previousSha}
       <Button destructive onclick={rollback} disabled={rollingBack}>
         {rollingBack ? 'rolling back...' : `rollback to ${project.previousSha.slice(0, 8)}`}

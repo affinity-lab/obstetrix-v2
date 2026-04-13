@@ -97,15 +97,20 @@
     {/if}
   </div>
 
+  <div class="bg-raised border border-canvas rounded-lg overflow-hidden">
+    <a href="/settings/nginx"
+       class="flex items-center justify-between px-4 py-3 hover:bg-base transition-colors text-sm">
+      <span class="text-control-c">nginx</span>
+      <span class="text-muted-c text-xs">edit sites-available configs, enable/disable, reload →</span>
+    </a>
+  </div>
+
   <div class="flex gap-3 flex-wrap">
     <Button small onclick={reloadConfig} disabled={reloading}>
       {reloading ? 'reloading...' : 'reload configs'}
     </Button>
     <Button small ghost onclick={() => location.href = '/settings/secrets'}>
       edit obstetrix.conf
-    </Button>
-    <Button small ghost onclick={() => location.href = '/settings/nginx'}>
-      nginx
     </Button>
   </div>
   {#if reloadMsg}<p class="text-muted-c text-xs">{reloadMsg}</p>{/if}

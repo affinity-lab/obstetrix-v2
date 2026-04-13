@@ -39,6 +39,9 @@ type ProjectConfig struct {
 	BackupDir         string
 	BackupIncludeData bool
 	BackupIncludeEnv  bool
+
+	// Polling
+	AutoDeploy bool
 }
 
 func LoadProjectConfig(confPath, name string, projectsDir string) (*ProjectConfig, error) {
@@ -138,5 +141,6 @@ func LoadProjectConfig(confPath, name string, projectsDir string) (*ProjectConfi
 		BackupDir:        get("BACKUP_DIR", ""),
 		BackupIncludeData: getBool("BACKUP_INCLUDE_DATA", true),
 		BackupIncludeEnv:  getBool("BACKUP_INCLUDE_ENV", true),
+		AutoDeploy:        getBool("AUTO_DEPLOY", true),
 	}, nil
 }
