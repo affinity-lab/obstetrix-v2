@@ -117,6 +117,7 @@
       deploy sha…
     </Button>
     <Button ghost onclick={() => location.href = `/project/${name}/logs`}>view logs</Button>
+    <Button ghost onclick={() => location.href = `/project/${name}/journal`}>journal</Button>
     <Button ghost onclick={() => location.href = `/project/${name}/deploys`}>deploys</Button>
     <Button ghost onclick={() => location.href = `/settings/project/${name}`}>deploy settings</Button>
     {#if project.previousSha}

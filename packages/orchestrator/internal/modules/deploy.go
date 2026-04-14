@@ -386,6 +386,10 @@ func (d *DeployModule) Run(ctx context.Context, proj *config.ProjectConfig, sha 
 	// 11. Success
 	durationMs := time.Since(start).Milliseconds()
 	emit(fmt.Sprintf("==> deploy complete in %dms", durationMs))
+	// Close the log writer first so DeployID() is populated before we store it in state.
+	if logWriter != nil {
+		logWriter.Close(true, durationMs, "")
+	}
 	now := time.Now().UTC().Format(time.RFC3339)
 	ok := true
 	newState := config.ProjectState{
@@ -416,9 +420,6 @@ func (d *DeployModule) Run(ctx context.Context, proj *config.ProjectConfig, sha 
 		SHA: sha, OK: true, DurationMs: durationMs, Ts: now,
 	})
 	setStatus(config.StatusRunning)
-	if logWriter != nil {
-		logWriter.Close(true, durationMs, "")
-	}
 	return nil
 }
 

@@ -113,6 +113,10 @@ export class OrchestratorModule {
     return this.svcs.socketClient.call('system.daemonStatus', null);
   }
 
+  journalTail(name: string, lines = 200): Promise<{ output: string }> {
+    return this.svcs.socketClient.call('journal.tail', { name, lines });
+  }
+
   listNginxConfigs(): Promise<{ name: string; enabled: boolean }[]> {
     return this.svcs.socketClient.call('nginx.list', null);
   }

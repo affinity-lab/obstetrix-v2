@@ -52,7 +52,7 @@ func (s *DeployLogService) OpenWriter(projectName, sha string) (*DeployLogWriter
 	if len(sha8) > 8 {
 		sha8 = sha8[:8]
 	}
-	tmpPath := filepath.Join(logDir, fmt.Sprintf("%s_%s.jsonl.running", ts, sha8))
+	tmpPath := filepath.Join(logDir, fmt.Sprintf("%s_%s.running", ts, sha8))
 
 	f, err := os.Create(tmpPath)
 	if err != nil {
@@ -148,7 +148,7 @@ func (s *DeployLogService) List(projectName string) ([]config.DeployLogMeta, err
 			continue
 		}
 		name := e.Name()
-		if !strings.HasSuffix(name, ".jsonl") && !strings.HasSuffix(name, ".jsonl.running") {
+		if !strings.HasSuffix(name, ".jsonl") && !strings.HasSuffix(name, ".running") {
 			continue
 		}
 		meta, err := parseLogFilename(projectName, filepath.Join(logDir, name))

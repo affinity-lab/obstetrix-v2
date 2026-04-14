@@ -424,6 +424,24 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 			}()
 			result = map[string]bool{"ok": true}
 
+		case "journal.tail":
+			var p struct {
+				Name  string `json:"name"`
+				Lines int    `json:"lines"`
+			}
+			json.Unmarshal(req.Params, &p)
+			if p.Lines <= 0 || p.Lines > 2000 {
+				p.Lines = 200
+			}
+			unitPattern := fmt.Sprintf("%s@*.service", p.Name)
+			out, err := exec.Command("journalctl", "-u", unitPattern,
+				"--no-pager", fmt.Sprintf("-n%d", p.Lines), "--output=short-iso").CombinedOutput()
+			if err != nil && len(out) == 0 {
+				rpcErr = err.Error()
+				break
+			}
+			result = map[string]string{"output": string(out)}
+
 		case "nginx.list":
 			entries, err := os.ReadDir("/etc/nginx/sites-available")
 			if err != nil {

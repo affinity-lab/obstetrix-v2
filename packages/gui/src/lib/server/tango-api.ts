@@ -99,6 +99,11 @@ const api = {
       modules.orchestrator.daemonStatus()),
   },
 
+  journal: {
+    tail: tango.query(async (args: { name: string; lines?: number }): Promise<{ output: string }> =>
+      modules.orchestrator.journalTail(args.name, args.lines)),
+  },
+
   nginx: {
     list: tango.query(async (_args: undefined): Promise<{ name: string; enabled: boolean }[]> =>
       modules.orchestrator.listNginxConfigs()),
