@@ -170,7 +170,7 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 			result = map[string]interface{}{"instances": st.Instances, "ports": st.RunningPorts}
 
 		case "config.reload":
-			n := r.mods.Poller.ReloadProjects()
+			n := r.svcs.ConfigWatcher.ForceReload()
 			slog.Info("config reloaded via rpc", "count", n)
 			result = map[string]int{"reloaded": n}
 
@@ -284,6 +284,7 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 				rpcErr = err.Error()
 				break
 			}
+			r.svcs.ConfigWatcher.ForceReload()
 			result = map[string]bool{"ok": true}
 
 		case "config.createProject":
