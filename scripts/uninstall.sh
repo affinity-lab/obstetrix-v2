@@ -38,16 +38,11 @@ if [[ $PURGE -eq 1 ]]; then
   echo "  /var/${PLATFORM}/         (state, logs, backups)"
   echo "  /opt/${PLATFORM}/         (all project app code and data)"
   echo "  ${PROJECTS_DIR}/          (projects root and work dirs)"
-  echo "  All project system users  (obstetrix-* users)"
   read -r -p "This cannot be undone. Type 'yes' to confirm: " c1
   [[ "$c1" != "yes" ]] && { echo "purge cancelled"; exit 0; }
   read -r -p "Are you absolutely sure? Type 'DELETE' to proceed: " c2
   if [[ "$c2" == "DELETE" ]]; then
     rm -rf "$CONFIG_ROOT" "/var/${PLATFORM}" "/opt/${PLATFORM}" "${PROJECTS_DIR}"
-    # Remove all project system users
-    while IFS= read -r user; do
-      userdel "$user" 2>/dev/null || true
-    done < <(getent passwd | awk -F: '$1 ~ /^obstetrix-/ {print $1}')
     userdel obstetrix 2>/dev/null || true
     echo "purge complete"
   else

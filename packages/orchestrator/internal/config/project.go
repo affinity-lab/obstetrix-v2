@@ -125,7 +125,7 @@ func LoadProjectConfig(confPath, name string, projectsDir string) (*ProjectConfi
 		Name:             name,
 		AppDir:           projectsDir + "/" + name,
 		WorkDir:          projectsDir + "/_work/" + name,
-		AppUser:          "obstetrix-" + name,
+		AppUser:          "obstetrix",
 		RepoURL:          repoURL,
 		Branch:           get("BRANCH", "main"),
 		BuildCmd:         buildCmd,

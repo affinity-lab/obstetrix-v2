@@ -253,7 +253,8 @@ func (d *DeployModule) Run(ctx context.Context, proj *config.ProjectConfig, sha 
 
 	// 3. git fetch + checkout in _work/{name}/
 	emit("==> git fetch")
-	gitCmd := fmt.Sprintf("cd %s && git fetch origin && git checkout %s && git reset --hard %s",
+	gitCmd := fmt.Sprintf(
+		"export HOME=/var/obstetrix GIT_TERMINAL_PROMPT=0; cd %s && git fetch origin && git checkout %s && git reset --hard %s",
 		proj.WorkDir, sha, sha)
 	res, err := d.svcs.Runner.Run(ctx, proj, gitCmd, lw)
 	if err != nil || res.ExitCode != 0 {
@@ -444,16 +445,7 @@ func (d *DeployModule) bootstrap(ctx context.Context, proj *config.ProjectConfig
 	lw := &lineWriter{emit: emit}
 	token := d.svcs.ConfigRW.GitHubToken()
 
-	// 1. Create system user (idempotent)
-	emit("==> creating system user " + proj.AppUser)
-	userCmd := fmt.Sprintf(
-		"id %s &>/dev/null || useradd --system --no-create-home --shell /usr/sbin/nologin %s",
-		proj.AppUser, proj.AppUser)
-	if res, err := d.svcs.Runner.RunAsRoot(ctx, userCmd, lw); err != nil || res.ExitCode != 0 {
-		return fmt.Errorf("bootstrap: create user failed")
-	}
-
-	// 2. Create _work/{name}/ and deploy dir owned by the project user
+	// 1. Create _work/{name}/ and deploy dir owned by the obstetrix user
 	emit("==> creating work dir and deploy dir")
 	mkdirCmd := fmt.Sprintf(
 		"mkdir -p %s %s && chown -R %s:%s %s %s && chmod 750 %s %s",
@@ -464,25 +456,25 @@ func (d *DeployModule) bootstrap(ctx context.Context, proj *config.ProjectConfig
 		return fmt.Errorf("bootstrap: create dirs failed")
 	}
 
-	// 3. Write .netrc for git auth
+	// 2. Write shared .netrc for git auth (HOME=/var/obstetrix, so ~/.netrc resolves here)
 	emit("==> writing git credentials")
 	netrcContent := fmt.Sprintf("machine github.com\nlogin x-token\npassword %s\n", token)
-	netrcPath := fmt.Sprintf("/var/obstetrix/%s/.netrc", proj.Name)
-	netrcDir := fmt.Sprintf("/var/obstetrix/%s", proj.Name)
+	netrcPath := "/var/obstetrix/.netrc"
 	netrcCmd := fmt.Sprintf(
-		"mkdir -p %s && chown %s:%s %s && printf '%%s' '%s' > %s && chmod 600 %s && chown %s:%s %s",
-		netrcDir, proj.AppUser, proj.AppUser, netrcDir,
+		"printf '%%s' '%s' > %s && chmod 600 %s && chown %s:%s %s",
 		netrcContent, netrcPath, netrcPath,
 		proj.AppUser, proj.AppUser, netrcPath)
 	if res, err := d.svcs.Runner.RunAsRoot(ctx, netrcCmd, lw); err != nil || res.ExitCode != 0 {
 		return fmt.Errorf("bootstrap: write netrc failed")
 	}
-	d.svcs.Runner.Run(ctx, proj,
-		fmt.Sprintf("git config --global credential.helper 'store --file=%s'", netrcPath), lw)
 
-	// 4. git clone into _work/{name}/
+	// 3. git clone into _work/{name}/
+	// HOME=/var/obstetrix so ~/.netrc resolves to the credentials file above.
+	// GIT_TERMINAL_PROMPT=0 prevents git from blocking on an interactive prompt.
 	emit("==> git clone " + proj.RepoURL)
-	cloneCmd := fmt.Sprintf("git clone %s %s", proj.RepoURL, proj.WorkDir)
+	cloneCmd := fmt.Sprintf(
+		"export HOME=/var/obstetrix GIT_TERMINAL_PROMPT=0; git clone %s %s",
+		proj.RepoURL, proj.WorkDir)
 	if res, err := d.svcs.Runner.Run(ctx, proj, cloneCmd, lw); err != nil || res.ExitCode != 0 {
 		return fmt.Errorf("bootstrap: git clone failed")
 	}
