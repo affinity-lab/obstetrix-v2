@@ -168,12 +168,16 @@
         <span class="text-muted-c text-xs uppercase tracking-wide">deploy history</span>
       </div>
       {#each project.deployHistory as record}
-        <div class="px-4 py-2 border-b border-canvas last:border-0 flex items-center justify-between text-sm">
+        <svelte:element
+          this={record.deployId ? 'a' : 'div'}
+          href={record.deployId ? `/project/${name}/deploys/${encodeURIComponent(record.deployId)}` : undefined}
+          class="px-4 py-2 border-b border-canvas last:border-0 flex items-center justify-between text-sm{record.deployId ? ' hover:bg-base transition-colors' : ''}"
+        >
           <span class="font-mono text-control-c">{record.sha.slice(0, 8)}</span>
           <span class="text-muted-c text-xs">{record.at}</span>
           <Badge color={record.ok ? 'accent' : 'red'}>{record.ok ? 'ok' : 'failed'}</Badge>
           <span class="text-muted-c text-xs">{formatDuration(record.durationMs)}</span>
-        </div>
+        </svelte:element>
       {/each}
     </div>
   {/if}

@@ -365,7 +365,7 @@ func (d *DeployModule) Run(ctx context.Context, proj *config.ProjectConfig, sha 
 		DefaultInstances: proj.DefaultInstances,
 		PersistentDirs:   manifest.Persistent,
 		DeployHistory: append([]config.DeployRecord{{
-			SHA: sha, At: now, OK: true, DurationMs: durationMs,
+			DeployID: logWriter.DeployID(), SHA: sha, At: now, OK: true, DurationMs: durationMs,
 		}}, prevState.DeployHistory...),
 	}
 	_ = d.svcs.State.Write(&newState)
@@ -415,7 +415,7 @@ func (d *DeployModule) fail(
 	st.LastDeployOK = &ok
 	st.LastDeployAt = &now
 	st.DeployHistory = append([]config.DeployRecord{{
-		SHA: sha, At: now, OK: false, DurationMs: durationMs, Error: &errMsg,
+		DeployID: logWriter.DeployID(), SHA: sha, At: now, OK: false, DurationMs: durationMs, Error: &errMsg,
 	}}, st.DeployHistory...)
 	_ = d.svcs.State.Write(st)
 	d.mods.Events.Publish(config.BuildEvent{

@@ -27,6 +27,16 @@ type DeployLogWriter struct {
 	startedAt time.Time
 	logDir    string
 	tmpPath   string
+	deployID  string // set by Close
+}
+
+// DeployID returns the log filename stem (e.g. "2006-01-02T15-04-05Z_sha8_ok").
+// Only valid after Close has been called.
+func (w *DeployLogWriter) DeployID() string {
+	if w == nil {
+		return ""
+	}
+	return w.deployID
 }
 
 // OpenWriter creates a new deploy log file. Returns nil writer (no error) if log dir unavailable.
@@ -112,6 +122,7 @@ func (w *DeployLogWriter) Close(ok bool, durationMs int64, errMsg string) {
 	}
 	finalPath := strings.TrimSuffix(w.tmpPath, ".running") + suffix + ".jsonl"
 	os.Rename(w.tmpPath, finalPath)
+	w.deployID = strings.TrimSuffix(filepath.Base(finalPath), ".jsonl")
 }
 
 func (w *DeployLogWriter) writeEntry(entry config.DeployLogEntry) {
