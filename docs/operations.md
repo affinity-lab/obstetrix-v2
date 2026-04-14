@@ -36,13 +36,13 @@ systemctl start myapp@4000.service
 
 Deploy logs are JSONL files at `/var/obstetrix/logs/{name}/`.
 
-**Filename format:** `{timestamp}_{sha8}` during a deploy, renamed to `{timestamp}_{sha8}_ok.log` or `{timestamp}_{sha8}_fail.log` on completion.
+**Filename format:** `{timestamp}_{sha8}.running` during a deploy, renamed to `{timestamp}_{sha8}_ok.jsonl` or `{timestamp}_{sha8}_fail.jsonl` on completion.
 
 ```
 /var/obstetrix/logs/api/
-├── 2026-03-23T10-00-00Z_a1b2c3d4_ok.log
-├── 2026-03-23T09-00-00Z_f6e5d4c3_fail.log
-└── 2026-03-23T08-00-00Z_b3c4d5e6.log   ← in-progress (no suffix yet)
+├── 2026-03-23T10-00-00Z_a1b2c3d4_ok.jsonl
+├── 2026-03-23T09-00-00Z_f6e5d4c3_fail.jsonl
+└── 2026-03-23T08-00-00Z_b3c4d5e6.running   ← in-progress
 ```
 
 **Line format (JSONL):**
@@ -55,7 +55,7 @@ Deploy logs are JSONL files at `/var/obstetrix/logs/{name}/`.
 
 To read a log file:
 ```bash
-cat /var/obstetrix/logs/api/2026-03-23T10-00-00Z_a1b2c3d4_ok.log | jq -r '.line // empty'
+cat /var/obstetrix/logs/api/2026-03-23T10-00-00Z_a1b2c3d4_ok.jsonl | jq -r '.line // empty'
 ```
 
 Logs are never automatically deleted.
@@ -79,7 +79,7 @@ State files are written atomically (via a temp file + rename) after every deploy
 **Automatic backups** run on the schedule in `obstetrix.conf` (`BACKUP_SCHEDULE`, default `0 3 * * *` = 3am UTC daily). Per-project schedules can be set in `project.conf`.
 
 **What gets backed up:**
-- The project's persistent dirs (`uploads/`, `data/`, etc.)
+- The project's persistent dirs (`uploads/`, `data/`, etc.) (if `BACKUP_INCLUDE_DATA=true`)
 - `.env` and `.npmrc` (if `BACKUP_INCLUDE_ENV=true`)
 - NOT the git clone (`_work/`) or build artifacts
 
@@ -119,7 +119,7 @@ tar -tzf /var/obstetrix/backups/api/2026-03-23T10-00-00Z_api.tar.gz
    sudo systemctl restart obstetrix-orchestratord
    ```
 
-The `.netrc` files for each project user are updated automatically on the next deploy.
+The shared `.netrc` file at `/var/obstetrix/.netrc` is updated automatically on the next deploy.
 
 ---
 

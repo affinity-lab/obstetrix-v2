@@ -110,7 +110,7 @@ On first deploy, obstetrix bootstraps the project automatically:
 
 1. Creates system user `obstetrix-myapp`
 2. Creates `/obstetrix-projects/myapp/` (deploy dir) and `/obstetrix-projects/_work/myapp/` (build workspace)
-3. Writes `/var/obstetrix/myapp/.netrc` with the GitHub token for git authentication
+3. Writes `/var/obstetrix/.netrc` with the GitHub token for git authentication
 4. Clones the repository into `_work/myapp/`
 5. Writes `/etc/systemd/system/myapp@.service` (template unit)
 6. Writes `scale.sh` into the deploy directory
