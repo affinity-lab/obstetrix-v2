@@ -40,8 +40,8 @@ _install_bun() {
     info "bun already installed ($(bun --version))"; return
   fi
   info "installing bun (system-wide)..."
-  # Install into /usr/local so all users (including project system users) can run it
-  BUN_INSTALL="/usr/local" curl -fsSL https://bun.sh/install | bash -s "bun-v1.1.0"
+  # Install into /usr/local so all users can run it
+  BUN_INSTALL="/usr/local" curl -fsSL https://bun.sh/install | bash
   # Ensure symlink exists
   [[ -f /usr/local/bin/bun ]] || ln -sf "$(command -v bun 2>/dev/null)" /usr/local/bin/bun
   info "bun installed: $(bun --version)"
