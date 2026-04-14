@@ -57,7 +57,11 @@ func loadManifest(workDir string, proj *config.ProjectConfig) *ObstetrixManifest
 		m.Health.TimeoutSeconds = proj.HealthTimeout
 	}
 	if m.Health.Path == "" {
-		m.Health.Path = "/health"
+		// Use the path from HEALTH_CHECK_URL if set, otherwise disable health checks.
+		if proj.HealthCheckURL != "" {
+			m.Health.Path = healthPathFromURL(proj.HealthCheckURL)
+		}
+		// If HealthCheckURL is empty, leave m.Health.Path as "" → health check is skipped.
 	}
 	if m.Health.InitialDelaySeconds == 0 {
 		m.Health.InitialDelaySeconds = 2
@@ -65,11 +69,26 @@ func loadManifest(workDir string, proj *config.ProjectConfig) *ObstetrixManifest
 	return &m
 }
 
+// healthPathFromURL extracts the path component from a full health check URL.
+// e.g. "http://127.0.0.1:$PORT/health" → "/health"
+func healthPathFromURL(rawURL string) string {
+	if schemeEnd := strings.Index(rawURL, "://"); schemeEnd != -1 {
+		rest := rawURL[schemeEnd+3:]
+		if slashIdx := strings.Index(rest, "/"); slashIdx != -1 {
+			return rest[slashIdx:]
+		}
+	}
+	return "/health"
+}
+
 func defaultManifest(proj *config.ProjectConfig) *ObstetrixManifest {
 	var m ObstetrixManifest
 	m.Persistent = proj.PersistentDirs
 	m.Build.Command = proj.BuildCmd
-	m.Health.Path = "/health"
+	// Derive health path from HEALTH_CHECK_URL. Empty URL → health checks disabled.
+	if proj.HealthCheckURL != "" {
+		m.Health.Path = healthPathFromURL(proj.HealthCheckURL)
+	}
 	m.Health.TimeoutSeconds = proj.HealthTimeout
 	m.Health.InitialDelaySeconds = 2
 	return &m
@@ -253,7 +272,8 @@ func (d *DeployModule) Run(ctx context.Context, proj *config.ProjectConfig, sha 
 
 	// 3. git fetch + checkout in _work/{name}/
 	emit("==> git fetch")
-	gitCmd := fmt.Sprintf("cd %s && git fetch origin && git checkout %s && git reset --hard %s",
+	gitCmd := fmt.Sprintf(
+		"export HOME=/var/obstetrix GIT_TERMINAL_PROMPT=0; cd %s && git fetch origin && git checkout %s && git reset --hard %s",
 		proj.WorkDir, sha, sha)
 	res, err := d.svcs.Runner.Run(ctx, proj, gitCmd, lw)
 	if err != nil || res.ExitCode != 0 {
@@ -266,6 +286,24 @@ func (d *DeployModule) Run(ctx context.Context, proj *config.ProjectConfig, sha 
 	buildCmd := manifest.Build.Command
 
 	// 5. Build in _work/{name}/
+	// Always clean .svelte-kit/ so svelte-kit sync regenerates it fresh.
+	os.RemoveAll(filepath.Join(proj.WorkDir, ".svelte-kit"))
+	// If there is no lockfile in the repo, delete node_modules before installing.
+	// Without a lockfile bun compares installed packages against package.json ranges
+	// and may declare "no changes" even when the installed versions are stale (e.g.
+	// left over from a different bun version). A clean install ensures consistency.
+	lockfiles := []string{"bun.lock", "bun.lockb", "package-lock.json", "yarn.lock", "pnpm-lock.yaml"}
+	hasLockfile := false
+	for _, lf := range lockfiles {
+		if _, err := os.Stat(filepath.Join(proj.WorkDir, lf)); err == nil {
+			hasLockfile = true
+			break
+		}
+	}
+	if !hasLockfile {
+		emit("==> no lockfile found — cleaning node_modules for a fresh install")
+		os.RemoveAll(filepath.Join(proj.WorkDir, "node_modules"))
+	}
 	emit("==> build: " + buildCmd)
 	res, err = d.svcs.Runner.Run(ctx, proj, fmt.Sprintf("cd %s && %s", proj.WorkDir, buildCmd), lw)
 	if err != nil || res.ExitCode != 0 {
@@ -334,16 +372,24 @@ func (d *DeployModule) Run(ctx context.Context, proj *config.ProjectConfig, sha 
 				fmt.Errorf("restart %s failed (exit %d)", svcName, res.ExitCode))
 		}
 		time.Sleep(initialDelay)
-		portHealthURL := fmt.Sprintf("http://127.0.0.1:%d%s", port, manifest.Health.Path)
-		emit(fmt.Sprintf("==> health check: %s", portHealthURL))
-		if err := d.mods.Health.Check(ctx, portHealthURL, manifest.Health.TimeoutSeconds); err != nil {
-			return d.fail(ctx, logWriter, proj, previousSHA, sha, start, isRollback, err)
+		if manifest.Health.Path != "" {
+			portHealthURL := fmt.Sprintf("http://127.0.0.1:%d%s", port, manifest.Health.Path)
+			emit(fmt.Sprintf("==> health check: %s", portHealthURL))
+			if err := d.mods.Health.Check(ctx, portHealthURL, manifest.Health.TimeoutSeconds); err != nil {
+				return d.fail(ctx, logWriter, proj, previousSHA, sha, start, isRollback, err)
+			}
+		} else {
+			emit("==> health check: disabled")
 		}
 	}
 
 	// 11. Success
 	durationMs := time.Since(start).Milliseconds()
 	emit(fmt.Sprintf("==> deploy complete in %dms", durationMs))
+	// Close the log writer first so DeployID() is populated before we store it in state.
+	if logWriter != nil {
+		logWriter.Close(true, durationMs, "")
+	}
 	now := time.Now().UTC().Format(time.RFC3339)
 	ok := true
 	newState := config.ProjectState{
@@ -365,7 +411,7 @@ func (d *DeployModule) Run(ctx context.Context, proj *config.ProjectConfig, sha 
 		DefaultInstances: proj.DefaultInstances,
 		PersistentDirs:   manifest.Persistent,
 		DeployHistory: append([]config.DeployRecord{{
-			SHA: sha, At: now, OK: true, DurationMs: durationMs,
+			DeployID: logWriter.DeployID(), SHA: sha, At: now, OK: true, DurationMs: durationMs,
 		}}, prevState.DeployHistory...),
 	}
 	_ = d.svcs.State.Write(&newState)
@@ -374,9 +420,6 @@ func (d *DeployModule) Run(ctx context.Context, proj *config.ProjectConfig, sha 
 		SHA: sha, OK: true, DurationMs: durationMs, Ts: now,
 	})
 	setStatus(config.StatusRunning)
-	if logWriter != nil {
-		logWriter.Close(true, durationMs, "")
-	}
 	return nil
 }
 
@@ -415,7 +458,7 @@ func (d *DeployModule) fail(
 	st.LastDeployOK = &ok
 	st.LastDeployAt = &now
 	st.DeployHistory = append([]config.DeployRecord{{
-		SHA: sha, At: now, OK: false, DurationMs: durationMs, Error: &errMsg,
+		DeployID: logWriter.DeployID(), SHA: sha, At: now, OK: false, DurationMs: durationMs, Error: &errMsg,
 	}}, st.DeployHistory...)
 	_ = d.svcs.State.Write(st)
 	d.mods.Events.Publish(config.BuildEvent{
@@ -444,16 +487,13 @@ func (d *DeployModule) bootstrap(ctx context.Context, proj *config.ProjectConfig
 	lw := &lineWriter{emit: emit}
 	token := d.svcs.ConfigRW.GitHubToken()
 
-	// 1. Create system user (idempotent)
-	emit("==> creating system user " + proj.AppUser)
-	userCmd := fmt.Sprintf(
-		"id %s &>/dev/null || useradd --system --no-create-home --shell /usr/sbin/nologin %s",
-		proj.AppUser, proj.AppUser)
-	if res, err := d.svcs.Runner.RunAsRoot(ctx, userCmd, lw); err != nil || res.ExitCode != 0 {
-		return fmt.Errorf("bootstrap: create user failed")
-	}
+	// 0. Ensure obstetrix user has a home dir (needed for npm/bun package caches).
+	//    Idempotent — safe to run on every bootstrap.
+	d.svcs.Runner.RunAsRoot(ctx,
+		"mkdir -p /home/obstetrix && chown obstetrix:obstetrix /home/obstetrix && chmod 750 /home/obstetrix && usermod -d /home/obstetrix obstetrix",
+		nil)
 
-	// 2. Create _work/{name}/ and deploy dir owned by the project user
+	// 1. Create _work/{name}/ and deploy dir owned by the obstetrix user
 	emit("==> creating work dir and deploy dir")
 	mkdirCmd := fmt.Sprintf(
 		"mkdir -p %s %s && chown -R %s:%s %s %s && chmod 750 %s %s",
@@ -464,25 +504,25 @@ func (d *DeployModule) bootstrap(ctx context.Context, proj *config.ProjectConfig
 		return fmt.Errorf("bootstrap: create dirs failed")
 	}
 
-	// 3. Write .netrc for git auth
+	// 2. Write shared .netrc for git auth (HOME=/var/obstetrix, so ~/.netrc resolves here)
 	emit("==> writing git credentials")
 	netrcContent := fmt.Sprintf("machine github.com\nlogin x-token\npassword %s\n", token)
-	netrcPath := fmt.Sprintf("/var/obstetrix/%s/.netrc", proj.Name)
-	netrcDir := fmt.Sprintf("/var/obstetrix/%s", proj.Name)
+	netrcPath := "/var/obstetrix/.netrc"
 	netrcCmd := fmt.Sprintf(
-		"mkdir -p %s && chown %s:%s %s && printf '%%s' '%s' > %s && chmod 600 %s && chown %s:%s %s",
-		netrcDir, proj.AppUser, proj.AppUser, netrcDir,
+		"printf '%%s' '%s' > %s && chmod 600 %s && chown %s:%s %s",
 		netrcContent, netrcPath, netrcPath,
 		proj.AppUser, proj.AppUser, netrcPath)
 	if res, err := d.svcs.Runner.RunAsRoot(ctx, netrcCmd, lw); err != nil || res.ExitCode != 0 {
 		return fmt.Errorf("bootstrap: write netrc failed")
 	}
-	d.svcs.Runner.Run(ctx, proj,
-		fmt.Sprintf("git config --global credential.helper 'store --file=%s'", netrcPath), lw)
 
-	// 4. git clone into _work/{name}/
+	// 3. git clone into _work/{name}/
+	// HOME=/var/obstetrix so ~/.netrc resolves to the credentials file above.
+	// GIT_TERMINAL_PROMPT=0 prevents git from blocking on an interactive prompt.
 	emit("==> git clone " + proj.RepoURL)
-	cloneCmd := fmt.Sprintf("git clone %s %s", proj.RepoURL, proj.WorkDir)
+	cloneCmd := fmt.Sprintf(
+		"export HOME=/var/obstetrix GIT_TERMINAL_PROMPT=0; git clone %s %s",
+		proj.RepoURL, proj.WorkDir)
 	if res, err := d.svcs.Runner.Run(ctx, proj, cloneCmd, lw); err != nil || res.ExitCode != 0 {
 		return fmt.Errorf("bootstrap: git clone failed")
 	}
@@ -585,7 +625,9 @@ func (d *DeployModule) SyncEnv(ctx context.Context, name string) error {
 	for _, port := range st.RunningPorts {
 		svcName := fmt.Sprintf("%s@%d.service", name, port)
 		d.svcs.Runner.RunAsRoot(ctx, "systemctl restart "+svcName, lw)
+		if proj.HealthCheckURL != "" {
 		d.mods.Health.Check(ctx, fmt.Sprintf("http://127.0.0.1:%d/health", port), proj.HealthTimeout)
+	}
 	}
 	return nil
 }

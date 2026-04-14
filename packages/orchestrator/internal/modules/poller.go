@@ -117,8 +117,16 @@ func (p *PollerModule) pollOnce(ctx context.Context) {
 			slog.Warn("state read failed", "project", name, "err", err)
 			continue
 		}
-		if st.CurrentSHA != nil && *st.CurrentSHA == headSHA {
+		if st.CurrentSHA == nil {
+			slog.Debug("skipping poll auto-deploy: project not yet deployed", "project", name)
+			continue
+		}
+		if *st.CurrentSHA == headSHA {
 			continue // already at HEAD
+		}
+		if !proj.AutoDeploy {
+			slog.Debug("auto-deploy disabled for project", "project", name)
+			continue
 		}
 		slog.Info("new commit detected, queuing deploy", "project", name, "sha", headSHA[:8])
 		p.TriggerDeploy(ctx, proj, headSHA, false)

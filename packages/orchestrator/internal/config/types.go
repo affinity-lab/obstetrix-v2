@@ -13,6 +13,7 @@ const (
 )
 
 type DeployRecord struct {
+	DeployID   string  `json:"deployId"`
 	SHA        string  `json:"sha"`
 	At         string  `json:"at"`
 	OK         bool    `json:"ok"`

@@ -16,6 +16,8 @@ type ConfigWatcherService struct {
 	appsRoot string
 	mu       sync.RWMutex
 	projects map[string]*config.ProjectConfig
+	onChange func(map[string]*config.ProjectConfig)
+	onBackup func(map[string]*config.ProjectConfig)
 }
 
 func newConfigWatcherService(paths config.Paths, appsRoot string) *ConfigWatcherService {
@@ -27,6 +29,9 @@ func (s *ConfigWatcherService) Watch(
 	onProjectsChange func(map[string]*config.ProjectConfig),
 	onBackupScheduleChange func(map[string]*config.ProjectConfig),
 ) {
+	s.onChange = onProjectsChange
+	s.onBackup = onBackupScheduleChange
+
 	fresh := s.load()
 	s.mu.Lock()
 	s.projects = fresh
@@ -52,6 +57,23 @@ func (s *ConfigWatcherService) Watch(
 			}
 		}
 	}
+}
+
+// ForceReload immediately re-reads all project configs from disk and notifies listeners.
+// Call after writing any project.conf to ensure the in-memory cache is up-to-date.
+func (s *ConfigWatcherService) ForceReload() int {
+	fresh := s.load()
+	s.mu.Lock()
+	s.projects = fresh
+	s.mu.Unlock()
+	if s.onChange != nil {
+		s.onChange(fresh)
+	}
+	if s.onBackup != nil {
+		s.onBackup(fresh)
+	}
+	slog.Info("config force-reloaded", "count", len(fresh))
+	return len(fresh)
 }
 
 func (s *ConfigWatcherService) All() map[string]*config.ProjectConfig {

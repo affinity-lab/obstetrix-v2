@@ -8,77 +8,84 @@ For HTTPS access, set up an nginx reverse proxy — see [install.md](install.md#
 
 ---
 
+## Navigation
+
+**Desktop:** top nav bar — `obstetrix · dashboard · backups · settings · nginx`
+
+**Mobile:** bottom tab bar — dashboard / backups / settings / nginx
+
+---
+
 ## Dashboard (`/`)
 
-The main page shows a card for each project with:
+Shows a card for each project with:
 
 - **Name** — links to the project detail page
 - **Status badge** — live, color-coded: green (running), red (failed), blue (building), grey (stopped/unknown)
 - **Current SHA** — first 8 characters of the deployed commit
+- **Instances** — running / total reserved
 - **Last deployed** — relative time (e.g., "2m ago")
-- **Deploy button** — triggers a deploy immediately
-- **Logs button** — opens the live log stream
+- **Deploy** button — triggers a deploy immediately; button label becomes "deploying…" optimistically
 
-The dashboard receives live updates automatically. Status badges and SHA update in real time as deploys progress — no page refresh needed.
+Live updates arrive automatically via SSE. Status badges, SHAs, and last-deploy times update in real time.
+
+**Create project:** a form at the bottom of the dashboard (or on empty state) lets you create a new project. Select a **build template** to pre-fill `REPO_URL`, `BUILD_CMD`, `HEALTH_CHECK_URL`, and instance defaults, then customise as needed.
 
 ---
 
 ## Project Detail (`/project/{name}`)
 
-Shows detailed information for a single project:
+Detailed view for a single project:
 
-- **Status badge** and current SHA
-- **Branch** and repo URL
-- **Last deploy** timestamp and success/failure
-- **Instance count** (running / total reserved)
+- Status badge, current SHA, branch, repo URL, last deploy time and ok/fail, instance count, health check URL (if set)
 
 **Actions:**
-- **Deploy now** — triggers a deploy; watch `/project/{name}/logs` for output
-- **Rollback** — reverts to the previous SHA (only shown if a previous SHA exists)
-- **View logs** — opens the live log stream
-- **Deploys** — opens the deploy history list
-- **Settings** — opens the project config editor
+- **Deploy now** — queues a deploy
+- **Deploy sha…** — toggle a SHA input panel; enter any full or short SHA and click **deploy** to pin that exact commit
+- **View logs** — live log stream
+- **Deploys** — deploy history list
+- **Deploy settings** — opens the project config editor (deploy tab)
+- **Rollback** (destructive, only shown when a previous SHA exists) — reverts to the previous commit
 
 **Scale slider:**
-Drag the slider to set the target instance count and click **apply**. The number of active instances changes immediately (starts or stops `{name}@{port}.service` units). The slider maximum is the port count allocated for the project.
+Drag to set instance count and click **apply**. Instances start or stop immediately. The slider max is the port count allocated for the project.
 
 **Deploy history table:**
-Shows the last 20 deploys with SHA, timestamp, ok/failed badge, and duration.
+Last 20 deploys with SHA, timestamp, ok/failed badge, and duration.
 
 ---
 
 ## Live Logs (`/project/{name}/logs`)
 
-Streams log output in real time using a Server-Sent Events connection.
+Real-time log stream with auto-reconnect (exponential backoff, 1 s → 30 s max).
 
-- **Log lines** — each line from the build and deploy process
-- **Status events** — shown when the project status changes
-- **Deploy complete** — shown when a deploy finishes (green = ok, red = failed)
-
-Error lines (lines starting with `error:`, `fatal:`, `panic:`, etc.) are highlighted in red.
-
-The view keeps the last 500 lines and auto-scrolls as new output arrives. A `● live` indicator shows the connection is active.
+- **Phase headers** (`==>` lines) — highlighted in accent colour
+- **Error lines** — highlighted in red (lines starting with `error:`, `fatal:`, `panic:`, etc.)
+- **Meta lines** — status/deploy-complete events, shown in muted colour
+- **Line count** — shown in the header
+- **Auto-scroll** — pauses when you scroll up; **resume** button appears; **clear** empties the buffer
+- Buffer holds the last 1 000 lines.
 
 ---
 
 ## Deploy History (`/project/{name}/deploys`)
 
-Lists all deploy log files for the project with:
-- Short SHA (8 chars)
-- Start timestamp
-- Status badge (running / ok / failed)
-- Duration
+Lists all deploy log files with status filter tabs (all / running / ok / failed).
 
-Click any row to open the full log for that deploy.
+Each row shows: short SHA, start time (absolute + relative), status badge, duration, and a **re-deploy** button to re-queue the same SHA.
+
+Auto-refreshes when a live `cicd:event` arrives.
 
 ---
 
 ## Deploy Log Detail (`/project/{name}/deploys/{deployId}`)
 
-Full JSONL log viewer for a single deploy. Shows:
-- Start entry (SHA, project name, timestamp)
-- All log lines (error lines in red)
-- End entry (ok/failed, duration, error message if any)
+Full JSONL log viewer for a single deploy:
+
+- Header with project name, SHA, status badge
+- Phase headers (`==>` lines) in accent colour; error lines in red
+- HH:MM:SS timestamps on each line
+- Duration and re-deploy button in the action bar
 
 ---
 
@@ -86,33 +93,60 @@ Full JSONL log viewer for a single deploy. Shows:
 
 The settings hub shows:
 
-**Disk usage** — lists each mount point with used/total GB and usage percentage.
+**Daemon status** — version, start time, config root, number of projects loaded.
+
+**Disk usage** — each mount point with used/total GB and percentage.
+
+**Port allocations** — base port and reserved range per project.
 
 **Project config links** — links to the config editor for each project.
 
+**Nginx card** — click to open the nginx site manager.
+
 **Actions:**
-- **Reload configs** — triggers `config.reload` on the orchestrator (same as `obstetrix-ctl config reload`)
+- **Reload configs** — re-reads all `project.conf` files (same as `obstetrix-ctl config reload`)
 - **Edit obstetrix.conf** — opens the secrets editor
 
 ---
 
 ## Project Config Editor (`/settings/project/{name}`)
 
-Three-tab editor for the project's config files:
+Four-tab editor:
 
-**project.conf tab:**
-- Shows current settings as key=value text
-- Edit directly and click **Save**
-- Changes apply on the next deploy
+### Deploy tab (default)
 
-**\.env tab:**
-- Edit environment variables
-- **Save** writes to `/etc/obstetrix/projects/{name}/.env`
-- **Sync now** pushes the resolved env to the deploy directory and performs a rolling restart (no build)
+Structured form for the most common `project.conf` fields:
 
-**\.npmrc tab:**
-- Edit npm/Bun config
-- **Save** writes to `/etc/obstetrix/projects/{name}/.npmrc`
+| Field | Config key |
+|-------|-----------|
+| Build command | `BUILD_CMD` |
+| Branch | `BRANCH` |
+| Persistent dirs | `PERSISTENT_DIRS` |
+| Health check URL | `HEALTH_CHECK_URL` |
+| Health timeout (s) | `HEALTH_TIMEOUT` |
+| Default instances | `DEFAULT_INSTANCES` |
+| Rollback on fail | `ROLLBACK_ON_FAIL` |
+| Auto-deploy | `AUTO_DEPLOY` |
+
+**Load template…** — choose a build template (Bun, SvelteKit/Bun, Node/npm, Next.js, Go, Python, static) to pre-fill the form fields. Customise and save.
+
+**Auto-deploy switch** — when off, the poller will still detect new commits but will not queue a deploy automatically. Use **Deploy now** on the project detail page to deploy manually. Projects that have never been deployed are always manual regardless of this setting.
+
+### project.conf tab
+
+Raw key=value editor for the full `project.conf`. Load template fills the whole file. Save invalidates the deploy tab so it re-reads values on next visit.
+
+### .env tab
+
+Environment variables written to `/etc/obstetrix/projects/{name}/.env`.
+
+Use `${VAR}` to substitute values from `obstetrix.conf` at deploy time.
+
+**Sync now** — pushes the resolved env to the running deploy directory and performs a rolling restart without a full build.
+
+### .npmrc tab
+
+npm/Bun config written to `/etc/obstetrix/projects/{name}/.npmrc`.
 
 ---
 
@@ -126,37 +160,59 @@ When saving, any line still containing `****` is skipped (preserving the current
 
 ---
 
+## Nginx Manager (`/settings/nginx`)
+
+Lists all files in `/etc/nginx/sites-available/` with enabled/disabled badges (based on whether a matching symlink exists in `sites-enabled/`).
+
+**Actions per site:**
+- Site name — clickable link to the config editor for that site
+- Enable / Disable — creates or removes the `sites-enabled` symlink (does not reload automatically)
+- **Test config** — runs `nginx -t` and shows output
+- **Reload nginx** — runs `systemctl reload nginx` and shows output
+
+---
+
+## Nginx Site Editor (`/settings/nginx/{site}`)
+
+Full textarea editor for `/etc/nginx/sites-available/{site}`.
+
+- **Unsaved** badge appears when you have uncommitted changes
+- **Save** — writes the file and immediately runs `nginx -t`; if the test fails, the previous version is restored automatically and the error is shown
+- **Test config** — runs `nginx -t` without saving
+- **Reload nginx** — applies the current on-disk config to live traffic
+- **Reset** — discards unsaved edits
+
+---
+
 ## Backups (`/backups`)
 
 Overview of all project backups:
 
 - Per-project card with the 3 most recent archives (date, size, download link)
 - **Backup now** button per project
-- **System backup** button (top-right) — backs up `/etc/obstetrix/` and global state
+- **System backup** button — backs up `/etc/obstetrix/` and global state
 - Link to the per-project backup history
 
 ---
 
 ## Per-Project Backup History (`/backups/{name}`)
 
-Full list of backup archives for one project with date, size, and download link.
+Full list of backup archives with date, size, and download link.
 
-**Backup now** triggers an immediate backup. The new archive appears at the top of the list.
-
-Downloads stream directly from the server as `.tar.gz` files.
+**Backup now** triggers an immediate backup. Downloads stream directly as `.tar.gz` files.
 
 ---
 
 ## Live updates
 
-The GUI maintains a persistent SSE connection to `/api/events` throughout the session. This connection receives `BuildEvent` messages for all projects:
+The GUI maintains a persistent SSE connection to `/api/events` throughout the session. `BuildEvent` messages are dispatched as a custom DOM event (`cicd:event`) that any page can listen to.
 
 | Event type | Effect |
 |------------|--------|
-| `status` | Updates the project's status badge on the dashboard and detail page |
+| `status` | Updates the project's status badge on dashboard and detail page |
 | `deploy_complete` | Updates SHA, last-deploy time, and ok/failed indicator |
 | `log` | Streams to the live log page for the relevant project |
 
-The SSE connection reconnects automatically if dropped.
+The SSE connection reconnects automatically if dropped. Deploy history and logs pages also re-fetch data when a `cicd:event` arrives.
 
 > **nginx / HTTP/2 note:** The `/api/events` response must not include `Connection: keep-alive` — that header is forbidden in HTTP/2 and causes Firefox to abort the connection (`NS_BINDING_ABORTED`) while Chrome silently ignores it. The nginx config in [install.md](install.md#nginx-reverse-proxy) uses a dedicated unbuffered location block for SSE routes; if you customise the proxy config, ensure `proxy_buffering off` and `proxy_read_timeout 3600s` are set for those paths.

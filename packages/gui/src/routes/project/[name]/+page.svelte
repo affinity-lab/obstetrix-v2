@@ -3,17 +3,23 @@
   import { onMount } from 'svelte';
   import { Badge, Button } from '@atom-forge/ui';
   import { api } from '$lib/tango.js';
+  import { relativeTime, formatDuration } from '$lib/format.js';
   import type { ProjectState, ProjectStatus } from '@obstetrix/shared';
 
   let { data } = $props();
 
   const name = $derived($page.params.name);
-  let project   = $derived<ProjectState>(data.project);
-  let deploying = $state(false);
+  let project    = $derived<ProjectState>(data.project);
+  let deploying  = $state(false);
   let rollingBack = $state(false);
   let scaleValue  = $derived(data.scale.instances);
   let scaling     = $state(false);
   let msg         = $state<string | null>(null);
+
+  // Deploy with specific SHA
+  let showShaInput = $state(false);
+  let deploySha    = $state('');
+  let deployingSha = $state(false);
 
   async function deploy() {
     deploying = true; msg = null;
@@ -22,6 +28,19 @@
       msg = 'deploy queued — watch logs for progress';
     } catch (e) { msg = `error: ${e}`; }
     finally { deploying = false; }
+  }
+
+  async function deployWithSha() {
+    const sha = deploySha.trim();
+    if (!sha) return;
+    deployingSha = true; msg = null;
+    try {
+      await api.deploy.trigger.$command({ name, sha });
+      msg = `deploy queued for ${sha.slice(0, 8)} — watch logs for progress`;
+      showShaInput = false;
+      deploySha = '';
+    } catch (e) { msg = `error: ${e}`; }
+    finally { deployingSha = false; }
   }
 
   async function rollback() {
@@ -59,7 +78,12 @@
 
   <div class="flex items-center gap-3">
     <h1 class="text-control-c text-lg font-medium">{project.name}</h1>
-    <Badge color={statusColor(project.status)}>{project.status}</Badge>
+    <div class="flex items-center gap-1.5">
+      {#if project.status === 'building'}
+        <span class="inline-block w-3 h-3 rounded-full border-2 border-blue-400 border-t-transparent animate-spin"></span>
+      {/if}
+      <Badge color={statusColor(project.status)}>{project.status}</Badge>
+    </div>
   </div>
 
   <div class="bg-raised border border-canvas rounded-lg px-4 py-4 grid grid-cols-2 gap-y-2 text-sm">
@@ -70,28 +94,56 @@
     <span class="text-muted-c">repo</span>
     <span class="text-muted-c text-xs truncate">{project.repoUrl}</span>
     <span class="text-muted-c">last deploy</span>
-    <span class="text-control-c">{project.lastDeployAt ?? 'never'}</span>
+    <span class="text-control-c">
+      {project.lastDeployAt ? relativeTime(project.lastDeployAt) : 'never'}
+    </span>
     <span class="text-muted-c">deploy ok</span>
     <span class="text-control-c">
       {project.lastDeployOk === null ? '—' : project.lastDeployOk ? 'yes' : 'no'}
     </span>
     <span class="text-muted-c">instances</span>
     <span class="text-control-c">{project.instances} / {project.portCount}</span>
+    {#if project.healthCheckUrl}
+      <span class="text-muted-c">health check</span>
+      <span class="text-muted-c text-xs truncate">{project.healthCheckUrl}</span>
+    {/if}
   </div>
 
   <div class="flex gap-2 flex-wrap">
     <Button onclick={deploy} disabled={deploying}>
       {deploying ? 'deploying...' : 'deploy now'}
     </Button>
+    <Button ghost small onclick={() => { showShaInput = !showShaInput; deploySha = ''; }}>
+      deploy sha…
+    </Button>
     <Button ghost onclick={() => location.href = `/project/${name}/logs`}>view logs</Button>
+    <Button ghost onclick={() => location.href = `/project/${name}/journal`}>journal</Button>
     <Button ghost onclick={() => location.href = `/project/${name}/deploys`}>deploys</Button>
-    <Button ghost onclick={() => location.href = `/settings/project/${name}`}>settings</Button>
+    <Button ghost onclick={() => location.href = `/settings/project/${name}`}>deploy settings</Button>
     {#if project.previousSha}
       <Button destructive onclick={rollback} disabled={rollingBack}>
         {rollingBack ? 'rolling back...' : `rollback to ${project.previousSha.slice(0, 8)}`}
       </Button>
     {/if}
   </div>
+
+  {#if showShaInput}
+    <div class="bg-raised border border-canvas rounded-lg px-4 py-4 flex flex-col gap-3">
+      <span class="text-control-c text-sm font-medium">deploy specific SHA</span>
+      <input
+        bind:value={deploySha}
+        placeholder="full or short SHA"
+        class="bg-base border border-canvas rounded font-mono text-xs text-control-c
+               px-3 py-2 outline-none focus:border-accent"
+      />
+      <div class="flex gap-2">
+        <Button small onclick={deployWithSha} disabled={deployingSha || !deploySha.trim()}>
+          {deployingSha ? 'deploying…' : 'deploy'}
+        </Button>
+        <Button ghost small onclick={() => { showShaInput = false; deploySha = ''; }}>cancel</Button>
+      </div>
+    </div>
+  {/if}
 
   <!-- Scale slider -->
   <div class="bg-raised border border-canvas rounded-lg px-4 py-4 flex flex-col gap-3">
@@ -122,12 +174,16 @@
         <span class="text-muted-c text-xs uppercase tracking-wide">deploy history</span>
       </div>
       {#each project.deployHistory as record}
-        <div class="px-4 py-2 border-b border-canvas last:border-0 flex items-center justify-between text-sm">
+        <svelte:element
+          this={record.deployId ? 'a' : 'div'}
+          href={record.deployId ? `/project/${name}/deploys/${encodeURIComponent(record.deployId)}` : undefined}
+          class="px-4 py-2 border-b border-canvas last:border-0 flex items-center justify-between text-sm{record.deployId ? ' hover:bg-base transition-colors' : ''}"
+        >
           <span class="font-mono text-control-c">{record.sha.slice(0, 8)}</span>
           <span class="text-muted-c text-xs">{record.at}</span>
           <Badge color={record.ok ? 'accent' : 'red'}>{record.ok ? 'ok' : 'failed'}</Badge>
-          <span class="text-muted-c text-xs">{record.durationMs}ms</span>
-        </div>
+          <span class="text-muted-c text-xs">{formatDuration(record.durationMs)}</span>
+        </svelte:element>
       {/each}
     </div>
   {/if}

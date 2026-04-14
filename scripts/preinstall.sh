@@ -37,11 +37,17 @@ _install_go() {
 
 _install_bun() {
   if command -v bun &>/dev/null && [[ ${FORCE:-0} -eq 0 ]]; then
-    info "bun already installed ($(bun --version))"; return
+    local ver; ver=$(bun --version 2>/dev/null)
+    local minor; minor=$(echo "$ver" | cut -d. -f2)
+    if [[ "$minor" -ge 2 ]]; then
+      info "bun $ver already installed"; return
+    fi
+    info "bun $ver is too old (need 1.2+), upgrading..."
+  else
+    info "installing bun (system-wide)..."
   fi
-  info "installing bun (system-wide)..."
-  # Install into /usr/local so all users (including project system users) can run it
-  BUN_INSTALL="/usr/local" curl -fsSL https://bun.sh/install | bash -s "bun-v1.1.0"
+  # Install into /usr/local so all users can run it
+  BUN_INSTALL="/usr/local" curl -fsSL https://bun.sh/install | bash
   # Ensure symlink exists
   [[ -f /usr/local/bin/bun ]] || ln -sf "$(command -v bun 2>/dev/null)" /usr/local/bin/bun
   info "bun installed: $(bun --version)"
@@ -126,11 +132,17 @@ _install_gui() {
 
 _create_obstetrix_user() {
   if id obstetrix &>/dev/null; then
-    info "user 'obstetrix' already exists"; return
+    info "user 'obstetrix' already exists"
+  else
+    info "creating system user 'obstetrix' (runs the GUI)..."
+    useradd --system --create-home --shell /usr/sbin/nologin \
+      --comment "Obstetrix GUI user" obstetrix
   fi
-  info "creating system user 'obstetrix' (runs the GUI)..."
-  useradd --system --no-create-home --shell /usr/sbin/nologin \
-    --comment "Obstetrix GUI user" obstetrix
+  # Ensure home dir exists — handles users created without --create-home
+  mkdir -p /home/obstetrix
+  chown obstetrix:obstetrix /home/obstetrix
+  chmod 750 /home/obstetrix
+  usermod -d /home/obstetrix obstetrix
 }
 
 _create_directories() {
