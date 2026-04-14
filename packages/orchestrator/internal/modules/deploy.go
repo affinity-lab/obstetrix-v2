@@ -57,7 +57,11 @@ func loadManifest(workDir string, proj *config.ProjectConfig) *ObstetrixManifest
 		m.Health.TimeoutSeconds = proj.HealthTimeout
 	}
 	if m.Health.Path == "" {
-		m.Health.Path = "/health"
+		// Use the path from HEALTH_CHECK_URL if set, otherwise disable health checks.
+		if proj.HealthCheckURL != "" {
+			m.Health.Path = healthPathFromURL(proj.HealthCheckURL)
+		}
+		// If HealthCheckURL is empty, leave m.Health.Path as "" → health check is skipped.
 	}
 	if m.Health.InitialDelaySeconds == 0 {
 		m.Health.InitialDelaySeconds = 2
@@ -65,11 +69,26 @@ func loadManifest(workDir string, proj *config.ProjectConfig) *ObstetrixManifest
 	return &m
 }
 
+// healthPathFromURL extracts the path component from a full health check URL.
+// e.g. "http://127.0.0.1:$PORT/health" → "/health"
+func healthPathFromURL(rawURL string) string {
+	if schemeEnd := strings.Index(rawURL, "://"); schemeEnd != -1 {
+		rest := rawURL[schemeEnd+3:]
+		if slashIdx := strings.Index(rest, "/"); slashIdx != -1 {
+			return rest[slashIdx:]
+		}
+	}
+	return "/health"
+}
+
 func defaultManifest(proj *config.ProjectConfig) *ObstetrixManifest {
 	var m ObstetrixManifest
 	m.Persistent = proj.PersistentDirs
 	m.Build.Command = proj.BuildCmd
-	m.Health.Path = "/health"
+	// Derive health path from HEALTH_CHECK_URL. Empty URL → health checks disabled.
+	if proj.HealthCheckURL != "" {
+		m.Health.Path = healthPathFromURL(proj.HealthCheckURL)
+	}
 	m.Health.TimeoutSeconds = proj.HealthTimeout
 	m.Health.InitialDelaySeconds = 2
 	return &m
@@ -353,10 +372,14 @@ func (d *DeployModule) Run(ctx context.Context, proj *config.ProjectConfig, sha 
 				fmt.Errorf("restart %s failed (exit %d)", svcName, res.ExitCode))
 		}
 		time.Sleep(initialDelay)
-		portHealthURL := fmt.Sprintf("http://127.0.0.1:%d%s", port, manifest.Health.Path)
-		emit(fmt.Sprintf("==> health check: %s", portHealthURL))
-		if err := d.mods.Health.Check(ctx, portHealthURL, manifest.Health.TimeoutSeconds); err != nil {
-			return d.fail(ctx, logWriter, proj, previousSHA, sha, start, isRollback, err)
+		if manifest.Health.Path != "" {
+			portHealthURL := fmt.Sprintf("http://127.0.0.1:%d%s", port, manifest.Health.Path)
+			emit(fmt.Sprintf("==> health check: %s", portHealthURL))
+			if err := d.mods.Health.Check(ctx, portHealthURL, manifest.Health.TimeoutSeconds); err != nil {
+				return d.fail(ctx, logWriter, proj, previousSHA, sha, start, isRollback, err)
+			}
+		} else {
+			emit("==> health check: disabled")
 		}
 	}
 
@@ -601,7 +624,9 @@ func (d *DeployModule) SyncEnv(ctx context.Context, name string) error {
 	for _, port := range st.RunningPorts {
 		svcName := fmt.Sprintf("%s@%d.service", name, port)
 		d.svcs.Runner.RunAsRoot(ctx, "systemctl restart "+svcName, lw)
+		if proj.HealthCheckURL != "" {
 		d.mods.Health.Check(ctx, fmt.Sprintf("http://127.0.0.1:%d/health", port), proj.HealthTimeout)
+	}
 	}
 	return nil
 }
