@@ -24,7 +24,7 @@ export const BUILD_TEMPLATES: BuildTemplate[] = [
     id:               'sveltekit-bun',
     label:            'SvelteKit (Bun)',
     description:      'SvelteKit app with adapter-node, running via Bun',
-    buildCmd:         'bun install && bun run build',
+    buildCmd:         'bun install && bunx svelte-kit sync && bun run build',
     healthPath:       '/',
     healthTimeout:    30,
     persistentDirs:   '',

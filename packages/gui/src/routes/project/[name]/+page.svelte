@@ -78,7 +78,12 @@
 
   <div class="flex items-center gap-3">
     <h1 class="text-control-c text-lg font-medium">{project.name}</h1>
-    <Badge color={statusColor(project.status)}>{project.status}</Badge>
+    <div class="flex items-center gap-1.5">
+      {#if project.status === 'building'}
+        <span class="inline-block w-3 h-3 rounded-full border-2 border-blue-400 border-t-transparent animate-spin"></span>
+      {/if}
+      <Badge color={statusColor(project.status)}>{project.status}</Badge>
+    </div>
   </div>
 
   <div class="bg-raised border border-canvas rounded-lg px-4 py-4 grid grid-cols-2 gap-y-2 text-sm">

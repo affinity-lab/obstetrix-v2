@@ -15,7 +15,8 @@ RESET_TOKEN=0
 ENV_FILE=""
 CONFIG_ROOT="/etc/obstetrix"
 PLATFORM="obstetrix"
-PROJECTS_DIR="/obstetrix-projects"
+PROJECTS_DIR=""          # empty = not set by flag; will prompt
+PROJECTS_DIR_FLAG=0      # 1 = --projects-dir was passed explicitly
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -23,7 +24,7 @@ while [[ $# -gt 0 ]]; do
     --reset-token)  RESET_TOKEN=1 ;;
     --env-file)     ENV_FILE="$2"; shift ;;
     --config-root)  CONFIG_ROOT="$2"; shift ;;
-    --projects-dir) PROJECTS_DIR="$2"; shift ;;
+    --projects-dir) PROJECTS_DIR="$2"; PROJECTS_DIR_FLAG=1; shift ;;
     *) die "unknown flag: $1" ;;
   esac
   shift
@@ -74,8 +75,34 @@ _write_token() {
   info "GITHUB_TOKEN written to obstetrix.conf"
 }
 
+_get_projects_dir() {
+  # If already set via --projects-dir flag, use it as-is
+  if [[ $PROJECTS_DIR_FLAG -eq 1 ]]; then
+    return
+  fi
+
+  # Check if a previous install already chose a path
+  local conf="${CONFIG_ROOT}/obstetrix.conf"
+  local existing=""
+  [[ -f "$conf" ]] && existing=$(grep -oP '(?<=^PROJECTS_DIR=).+' "$conf" 2>/dev/null || true)
+  local default="${existing:-/obstetrix-projects}"
+
+  echo
+  echo -e "${YELLOW}[obstetrix]${NC} Where should project files be stored?"
+  echo    "  This directory will hold all app deploys, build workspaces, and persistent data."
+  read -r -p "  Projects directory [${default}]: " input
+  if [[ -n "$input" ]]; then
+    PROJECTS_DIR="$input"
+  else
+    PROJECTS_DIR="$default"
+  fi
+  export PROJECTS_DIR
+  info "projects dir: ${PROJECTS_DIR}"
+}
+
 info "preparing installation..."
 _get_token
+_get_projects_dir
 
 info "phase 1: preinstall"
 # shellcheck source=preinstall.sh

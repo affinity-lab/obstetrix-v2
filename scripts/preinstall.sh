@@ -126,11 +126,17 @@ _install_gui() {
 
 _create_obstetrix_user() {
   if id obstetrix &>/dev/null; then
-    info "user 'obstetrix' already exists"; return
+    info "user 'obstetrix' already exists"
+  else
+    info "creating system user 'obstetrix' (runs the GUI)..."
+    useradd --system --create-home --shell /usr/sbin/nologin \
+      --comment "Obstetrix GUI user" obstetrix
   fi
-  info "creating system user 'obstetrix' (runs the GUI)..."
-  useradd --system --no-create-home --shell /usr/sbin/nologin \
-    --comment "Obstetrix GUI user" obstetrix
+  # Ensure home dir exists — handles users created without --create-home
+  mkdir -p /home/obstetrix
+  chown obstetrix:obstetrix /home/obstetrix
+  chmod 750 /home/obstetrix
+  usermod -d /home/obstetrix obstetrix
 }
 
 _create_directories() {

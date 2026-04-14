@@ -228,12 +228,18 @@
   <div class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
     {#each projects as project (project.name)}
       {@const isDeploying = deployingSet.has(project.name)}
-      <div class="bg-raised border border-canvas rounded-lg px-4 py-4 flex flex-col gap-3">
+      <div class="bg-raised border rounded-lg px-4 py-4 flex flex-col gap-3 transition-colors
+                  {project.status === 'building' ? 'border-blue-500/60 shadow-[0_0_0_1px_rgba(59,130,246,0.3)] animate-pulse' : 'border-canvas'}">
         <div class="flex items-center justify-between">
           <a href="/project/{project.name}" class="text-control-c font-medium text-sm hover:underline">
             {project.name}
           </a>
-          <Badge color={statusColor(project.status)}>{project.status}</Badge>
+          <div class="flex items-center gap-1.5">
+            {#if project.status === 'building'}
+              <span class="inline-block w-3 h-3 rounded-full border-2 border-blue-400 border-t-transparent animate-spin"></span>
+            {/if}
+            <Badge color={statusColor(project.status)}>{project.status}</Badge>
+          </div>
         </div>
 
         <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">

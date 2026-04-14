@@ -445,6 +445,12 @@ func (d *DeployModule) bootstrap(ctx context.Context, proj *config.ProjectConfig
 	lw := &lineWriter{emit: emit}
 	token := d.svcs.ConfigRW.GitHubToken()
 
+	// 0. Ensure obstetrix user has a home dir (needed for npm/bun package caches).
+	//    Idempotent — safe to run on every bootstrap.
+	d.svcs.Runner.RunAsRoot(ctx,
+		"mkdir -p /home/obstetrix && chown obstetrix:obstetrix /home/obstetrix && chmod 750 /home/obstetrix && usermod -d /home/obstetrix obstetrix",
+		nil)
+
 	// 1. Create _work/{name}/ and deploy dir owned by the obstetrix user
 	emit("==> creating work dir and deploy dir")
 	mkdirCmd := fmt.Sprintf(
