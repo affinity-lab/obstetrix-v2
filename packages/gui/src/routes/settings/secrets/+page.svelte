@@ -1,22 +1,33 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Button }  from '@atom-forge/ui';
+  import { Button, Switch, Textarea, Breadcrumb, getToastManager } from '@atom-forge/ui';
   import { api }     from '$lib/tango.js';
 
   let confText = $state('');
   let masked   = $state(true);
   let saving   = $state(false);
-  let msg      = $state<string | null>(null);
+  let loaded   = $state(false);
+
+  const toast = getToastManager();
 
   async function load() {
     const m = await api.config.getMainConf.$query({ mask: masked });
     confText = Object.entries(m).map(([k, v]) => `${k}=${v}`).join('\n');
   }
 
-  onMount(load);
+  // Reload when masked toggle changes (after initial mount)
+  $effect(() => {
+    masked; // reactive dependency
+    if (loaded) load();
+  });
+
+  onMount(async () => {
+    await load();
+    loaded = true;
+  });
 
   async function save() {
-    saving = true; msg = null;
+    saving = true;
     try {
       const changes: Record<string, string> = {};
       for (const line of confText.split('\n')) {
@@ -28,17 +39,18 @@
         if (changes[k].includes('****')) delete changes[k];
       }
       await api.config.setMainConf.$command({ changes });
-      msg = 'saved';
-    } catch (e) { msg = `error: ${e}`; }
-    finally { saving = false; }
+      toast.show('Saved', { type: 'success' });
+    } catch (e) {
+      toast.show(`Error: ${e}`, { type: 'error' });
+    } finally { saving = false; }
   }
 </script>
 
 <div class="flex flex-col gap-4 max-w-2xl">
-  <div class="flex items-center gap-3">
-    <a href="/settings" class="text-muted-c text-sm hover:text-control-c">← settings</a>
-    <span class="text-control-c text-sm font-medium">obstetrix.conf</span>
-  </div>
+  <Breadcrumb items={[
+    { label: 'settings', href: '/settings' },
+    { label: 'obstetrix.conf' },
+  ]} />
 
   <p class="text-muted-c text-xs">
     All settings including <code class="font-mono">GITHUB_TOKEN</code> and
@@ -46,22 +58,15 @@
     TOKEN / SECRET / KEY are masked by default.
   </p>
 
-  <div class="flex items-center gap-2">
-    <label class="flex items-center gap-2 text-muted-c text-xs cursor-pointer">
-      <input type="checkbox" bind:checked={masked} onchange={load} class="accent-accent" />
-      mask secret values
-    </label>
-  </div>
+  <Switch bind:value={masked} label="mask secret values" />
 
-  <textarea
+  <Textarea
     bind:value={confText}
-    class="bg-raised border border-canvas rounded-lg font-mono text-xs text-control-c
-           p-3 h-[50vh] resize-none outline-none focus:border-accent"
-    spellcheck="false"
-  ></textarea>
+    monospace
+    rows={24}
+  />
 
   <div class="flex gap-2">
-    <Button small onclick={save} disabled={saving}>{saving ? 'saving...' : 'save'}</Button>
+    <Button small onclick={save} loading={saving}>{saving ? 'saving...' : 'save'}</Button>
   </div>
-  {#if msg}<p class="text-muted-c text-xs">{msg}</p>{/if}
 </div>

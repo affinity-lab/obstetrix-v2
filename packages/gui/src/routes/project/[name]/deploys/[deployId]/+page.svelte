@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page }    from '$app/stores';
   import { onMount } from 'svelte';
-  import { Badge, Button } from '@atom-forge/ui';
+  import { Chip, Button, Breadcrumb, getToastManager } from '@atom-forge/ui';
   import { api }     from '$lib/tango.js';
   import { formatDuration, isPhaseHeader } from '$lib/format.js';
   import type { DeployLogEntry, DeployLogMeta } from '@obstetrix/shared';
@@ -12,7 +12,8 @@
   let meta       = $state<DeployLogMeta | null>(null);
   let loading    = $state(true);
   let redeploying = $state(false);
-  let msg        = $state<string | null>(null);
+
+  const toast = getToastManager();
 
   onMount(async () => {
     try {
@@ -29,12 +30,12 @@
 
   async function redeploy() {
     if (!meta) return;
-    redeploying = true; msg = null;
+    redeploying = true;
     try {
       await api.deploy.trigger.$command({ name, sha: meta.sha });
-      msg = `deploy queued for ${meta.sha}`;
+      toast.show(`Deploy queued for ${meta.sha}`, { type: 'success' });
     } catch (e) {
-      msg = `error: ${e}`;
+      toast.show(`Error: ${e}`, { type: 'error' });
     } finally {
       redeploying = false;
     }
@@ -42,7 +43,7 @@
 
   function lineClass(entry: DeployLogEntry): string {
     if (entry.type === 'start') return 'text-accent font-medium';
-    if (entry.type === 'end')   return entry.ok ? 'text-accent font-medium' : 'text-red-400 font-medium';
+    if (entry.type === 'end')   return entry.ok ? 'text-green-400 font-medium' : 'text-red-400 font-medium';
     if (entry.level === 'error') return 'text-red-400';
     if (entry.line && isPhaseHeader(entry.line)) return 'text-accent';
     return 'text-control-c';
@@ -54,33 +55,31 @@
 </script>
 
 <div class="flex flex-col gap-4 max-w-2xl">
-  <div class="flex items-center gap-2 text-sm flex-wrap">
-    <a href="/project/{name}" class="text-muted-c hover:text-control-c">{name}</a>
-    <span class="text-muted-c">/</span>
-    <a href="/project/{name}/deploys" class="text-muted-c hover:text-control-c">deploys</a>
-    <span class="text-muted-c">/</span>
-    <span class="text-control-c font-mono text-xs">{meta?.sha ?? decodeURIComponent(deployId)}</span>
+  <div class="flex items-center gap-2 flex-wrap">
+    <Breadcrumb items={[
+      { label: 'dashboard', href: '/' },
+      { label: name, href: `/project/${name}` },
+      { label: 'deploys', href: `/project/${name}/deploys` },
+      { label: meta?.sha?.slice(0, 8) ?? decodeURIComponent(deployId) },
+    ]} />
   </div>
 
   {#if meta}
     <div class="flex items-center gap-3 flex-wrap">
       {#if meta.ok === null}
-        <Badge color="blue">running</Badge>
+        <Chip color="blue">running</Chip>
       {:else}
-        <Badge color={meta.ok ? 'accent' : 'red'}>{meta.ok ? 'ok' : 'failed'}</Badge>
+        <Chip color={meta.ok ? 'green' : 'red'}>{meta.ok ? 'ok' : 'failed'}</Chip>
       {/if}
       {#if meta.durationMs > 0}
         <span class="text-muted-c text-xs">{formatDuration(meta.durationMs)}</span>
       {/if}
       {#if meta.ok !== null}
-        <Button micro ghost onclick={redeploy} disabled={redeploying}>
+        <Button micro ghost onclick={redeploy} loading={redeploying}>
           {redeploying ? 're-deploying…' : `↩ re-deploy ${meta.sha}`}
         </Button>
       {/if}
     </div>
-    {#if msg}
-      <p class="text-muted-c text-xs">{msg}</p>
-    {/if}
   {/if}
 
   {#if loading}
@@ -88,7 +87,7 @@
   {:else if entries.length === 0}
     <p class="text-muted-c text-sm">log not found</p>
   {:else}
-    <div class="bg-raised border border-canvas rounded-lg font-mono text-xs p-4 overflow-auto max-h-[75vh]">
+    <div class="bg-raised border border-base-b rounded-lg font-mono text-xs p-4 overflow-auto max-h-[75vh]">
       {#each entries as entry}
         {#if entry.type === 'start'}
           <div class={lineClass(entry)}>

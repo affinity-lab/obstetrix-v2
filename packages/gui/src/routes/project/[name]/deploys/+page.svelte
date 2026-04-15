@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page }    from '$app/stores';
   import { onMount } from 'svelte';
-  import { Badge, Button }   from '@atom-forge/ui';
+  import { Chip, Button, ButtonBar, Breadcrumb } from '@atom-forge/ui';
   import { api }     from '$lib/tango.js';
   import { formatDuration, shortTime, relativeTime } from '$lib/format.js';
   import type { DeployLogMeta, BuildEvent } from '@obstetrix/shared';
@@ -10,13 +10,12 @@
   let logs      = $state<DeployLogMeta[]>([]);
   let loading   = $state(true);
   let filter    = $state<'all' | 'ok' | 'failed' | 'running'>('all');
-  let redeploying = $state<string | null>(null); // deployId being redeployed
-  let msg       = $state<string | null>(null);
+  let redeploying = $state<string | null>(null);
 
   const filtered = $derived(
-    filter === 'all' ? logs :
+    filter === 'all'     ? logs :
     filter === 'running' ? logs.filter(l => l.ok === null) :
-    filter === 'ok' ? logs.filter(l => l.ok === true) :
+    filter === 'ok'      ? logs.filter(l => l.ok === true) :
     logs.filter(l => l.ok === false)
   );
 
@@ -30,7 +29,6 @@
 
   onMount(() => {
     load();
-    // Refresh list when a deploy completes
     const handler = (e: Event) => {
       const event = (e as CustomEvent<BuildEvent>).detail;
       if (event.projectName === name && event.type === 'deploy_complete') {
@@ -43,12 +41,10 @@
 
   async function redeploy(sha: string, deployId: string) {
     redeploying = deployId;
-    msg = null;
     try {
       await api.deploy.trigger.$command({ name, sha });
-      msg = `deploy queued for ${sha}`;
-    } catch (e) {
-      msg = `error: ${e}`;
+    } catch {
+      // silently fail — user can retry
     } finally {
       redeploying = null;
     }
@@ -56,30 +52,26 @@
 </script>
 
 <div class="flex flex-col gap-4 max-w-2xl">
-  <div class="flex items-center gap-2 text-sm flex-wrap">
-    <a href="/project/{name}" class="text-muted-c hover:text-control-c">← {name}</a>
-    <span class="text-muted-c">/</span>
-    <span class="text-control-c">deploys</span>
+  <div class="flex items-center gap-2 flex-wrap">
+    <Breadcrumb items={[
+      { label: 'dashboard', href: '/' },
+      { label: name, href: `/project/${name}` },
+      { label: 'deploys' },
+    ]} />
     <span class="flex-1"></span>
     <Button ghost small onclick={load}>refresh</Button>
   </div>
 
   <!-- Filter bar -->
-  <div class="flex gap-1">
+  <ButtonBar>
     {#each (['all', 'running', 'ok', 'failed'] as const) as f}
-      <button
+      <Button
+        small
         onclick={() => filter = f}
-        class="px-3 py-1.5 text-xs rounded transition-colors
-               {filter === f
-                 ? 'bg-accent text-white'
-                 : 'text-muted-c hover:text-control-c border border-canvas'}"
-      >{f}</button>
+        class={filter === f ? '' : 'opacity-60'}
+      >{f}</Button>
     {/each}
-  </div>
-
-  {#if msg}
-    <p class="text-muted-c text-xs">{msg}</p>
-  {/if}
+  </ButtonBar>
 
   {#if loading}
     <p class="text-muted-c text-sm">loading...</p>
@@ -88,12 +80,12 @@
       {filter === 'all' ? 'no deploy logs yet' : `no ${filter} deploys`}
     </p>
   {:else}
-    <div class="bg-raised border border-canvas rounded-lg overflow-hidden">
+    <div class="bg-raised border border-base-b rounded-lg overflow-hidden">
       {#each filtered as log}
-        <div class="border-b border-canvas last:border-0">
+        <div class="border-b border-base-b last:border-0">
           <a
             href="/project/{name}/deploys/{encodeURIComponent(log.deployId)}"
-            class="flex items-center gap-3 px-4 py-3 hover:bg-base transition-colors text-sm"
+            class="flex items-center gap-3 px-4 py-3 hover:bg-secondary/50 transition-colors text-sm"
           >
             <span class="font-mono text-control-c text-xs w-16 shrink-0">{log.sha}</span>
             <div class="flex-1 min-w-0 flex flex-col gap-0.5">
@@ -101,20 +93,20 @@
               <span class="text-muted-c text-xs">{relativeTime(log.startedAt)}</span>
             </div>
             {#if log.ok === null}
-              <Badge color="blue">running</Badge>
+              <Chip color="blue">running</Chip>
             {:else}
-              <Badge color={log.ok ? 'accent' : 'red'}>{log.ok ? 'ok' : 'failed'}</Badge>
+              <Chip color={log.ok ? 'green' : 'red'}>{log.ok ? 'ok' : 'failed'}</Chip>
             {/if}
             <span class="text-muted-c text-xs w-14 text-right shrink-0">
               {formatDuration(log.durationMs)}
             </span>
           </a>
-          <!-- Re-deploy row -->
           {#if log.ok !== null}
             <div class="px-4 pb-2 flex items-center gap-2">
               <Button
                 micro ghost
                 disabled={redeploying === log.deployId}
+                loading={redeploying === log.deployId}
                 onclick={(e: MouseEvent) => { e.stopPropagation(); redeploy(log.sha, log.deployId); }}
               >
                 {redeploying === log.deployId ? 're-deploying…' : `↩ re-deploy ${log.sha}`}

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page }    from '$app/stores';
   import { onMount, onDestroy } from 'svelte';
-  import { Button }  from '@atom-forge/ui';
+  import { Button, Breadcrumb } from '@atom-forge/ui';
   import { api }     from '$lib/tango.js';
 
   const name     = $derived($page.params.name);
@@ -45,15 +45,19 @@
 </script>
 
 <div class="flex flex-col gap-4 max-w-4xl">
-  <div class="flex items-center gap-2 text-sm flex-wrap">
-    <a href="/project/{name}" class="text-muted-c hover:text-control-c">← {name}</a>
-    <span class="text-muted-c">/</span>
-    <span class="text-control-c">journal</span>
+  <div class="flex items-center gap-2 flex-wrap">
+    <Breadcrumb items={[
+      { label: 'dashboard', href: '/' },
+      { label: name, href: `/project/${name}` },
+      { label: 'journal' },
+    ]} />
     <span class="flex-1"></span>
+    <!-- styled native select — NativeSelect takes options[] not children -->
     <select
       bind:value={lines}
       onchange={load}
-      class="bg-base border border-canvas rounded text-xs text-control-c px-2 py-1 outline-none"
+      class="bg-control border border-base-b rounded-md h-8 text-xs text-control-c
+             px-2 outline-none focus:ring-2 focus:ring-ring cursor-pointer"
     >
       <option value={100}>last 100</option>
       <option value={300}>last 300</option>
@@ -64,14 +68,14 @@
       {loading ? 'loading…' : 'refresh'}
     </Button>
     <Button ghost small onclick={toggleAutoRefresh}>
-      {autoRefresh ? '⏹ stop' : '▶ auto (5s)'}
+      {autoRefresh ? 'stop auto' : 'auto (5s)'}
     </Button>
   </div>
 
   {#if loading && !output}
     <p class="text-muted-c text-sm">loading…</p>
   {:else}
-    <div class="bg-raised border border-canvas rounded-lg font-mono text-xs p-4 overflow-auto max-h-[80vh] whitespace-pre-wrap">
+    <div class="bg-raised border border-base-b rounded-lg font-mono text-xs p-4 overflow-auto max-h-[80vh] whitespace-pre-wrap">
       {#each output.split('\n') as line}
         {#if line}
           <div class={lineClass(line)}>{line}</div>

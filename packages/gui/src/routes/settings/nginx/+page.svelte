@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Badge, Button, Switch } from '@atom-forge/ui';
+  import { Chip, Button, Breadcrumb, getToastManager } from '@atom-forge/ui';
   import { api } from '$lib/tango.js';
 
   type NginxSite = { name: string; enabled: boolean };
@@ -9,8 +9,10 @@
   let loading   = $state(true);
   let testing   = $state(false);
   let reloading = $state(false);
-  let msg       = $state<{ text: string; ok: boolean } | null>(null);
+  let testOutput = $state<{ text: string; ok: boolean } | null>(null);
   let toggling  = $state<string | null>(null);
+
+  const toast = getToastManager();
 
   async function load() {
     try {
@@ -23,27 +25,23 @@
   onMount(load);
 
   async function testConfig() {
-    testing = true; msg = null;
+    testing = true; testOutput = null;
     try {
       const res = await api.nginx.test.$query(undefined);
-      msg = { text: res.output || (res.ok ? 'syntax ok' : 'test failed'), ok: res.ok };
+      testOutput = { text: res.output || (res.ok ? 'syntax ok' : 'test failed'), ok: res.ok };
     } catch (e) {
-      msg = { text: String(e), ok: false };
-    } finally {
-      testing = false;
-    }
+      testOutput = { text: String(e), ok: false };
+    } finally { testing = false; }
   }
 
   async function reloadNginx() {
-    reloading = true; msg = null;
+    reloading = true; testOutput = null;
     try {
       const res = await api.nginx.reload.$command(undefined);
-      msg = { text: res.output || 'nginx reloaded', ok: true };
+      toast.show(res.output || 'nginx reloaded', { type: 'success' });
     } catch (e) {
-      msg = { text: String(e), ok: false };
-    } finally {
-      reloading = false;
-    }
+      toast.show(String(e), { type: 'error' });
+    } finally { reloading = false; }
   }
 
   async function toggleSite(site: NginxSite) {
@@ -56,32 +54,29 @@
       }
       sites = sites.map(s => s.name === site.name ? { ...s, enabled: !s.enabled } : s);
     } catch (e) {
-      msg = { text: String(e), ok: false };
-    } finally {
-      toggling = null;
-    }
+      toast.show(String(e), { type: 'error' });
+    } finally { toggling = null; }
   }
 </script>
 
 <div class="flex flex-col gap-6 max-w-2xl">
-  <div class="flex items-center gap-2 text-sm">
-    <a href="/settings" class="text-muted-c hover:text-control-c">settings</a>
-    <span class="text-muted-c">/</span>
-    <span class="text-control-c">nginx</span>
-  </div>
+  <Breadcrumb items={[
+    { label: 'settings', href: '/settings' },
+    { label: 'nginx' },
+  ]} />
 
   <div class="flex gap-2 flex-wrap">
-    <Button small onclick={testConfig} disabled={testing}>
+    <Button small onclick={testConfig} loading={testing}>
       {testing ? 'testing…' : 'test config'}
     </Button>
-    <Button small secondary onclick={reloadNginx} disabled={reloading}>
+    <Button small secondary onclick={reloadNginx} loading={reloading}>
       {reloading ? 'reloading…' : 'reload nginx'}
     </Button>
   </div>
 
-  {#if msg}
-    <pre class="text-xs rounded-lg px-4 py-3 font-mono whitespace-pre-wrap
-                {msg.ok ? 'bg-raised text-accent border border-canvas' : 'bg-raised text-red-400 border border-canvas'}">{msg.text}</pre>
+  {#if testOutput}
+    <pre class="text-xs rounded-lg px-4 py-3 font-mono whitespace-pre-wrap border border-base-b
+                {testOutput.ok ? 'bg-raised text-green-400' : 'bg-raised text-red-400'}">{testOutput.text}</pre>
   {/if}
 
   {#if loading}
@@ -89,21 +84,21 @@
   {:else if sites.length === 0}
     <p class="text-muted-c text-sm">no configs found in /etc/nginx/sites-available/</p>
   {:else}
-    <div class="bg-raised border border-canvas rounded-lg overflow-hidden">
-      <div class="px-4 py-2 border-b border-canvas">
+    <div class="bg-raised border border-base-b rounded-lg overflow-hidden">
+      <div class="px-4 py-2.5 border-b border-base-b">
         <span class="text-muted-c text-xs uppercase tracking-wide">sites-available</span>
       </div>
       {#each sites as site}
-        <div class="flex items-center gap-3 px-4 py-3 border-b border-canvas last:border-0">
+        <div class="flex items-center gap-3 px-4 py-3 border-b border-base-b last:border-0">
           <a
             href="/settings/nginx/{encodeURIComponent(site.name)}"
             class="flex-1 text-control-c text-sm font-mono hover:underline"
           >{site.name}</a>
-          <Badge color={site.enabled ? 'accent' : undefined}>
+          <Chip color={site.enabled ? 'green' : 'base'}>
             {site.enabled ? 'enabled' : 'disabled'}
-          </Badge>
+          </Chip>
           {#if toggling === site.name}
-            <span class="text-muted-c text-xs">…</span>
+            <span class="text-muted-c text-xs w-14">…</span>
           {:else}
             <Button micro ghost onclick={() => toggleSite(site)} disabled={toggling !== null}>
               {site.enabled ? 'disable' : 'enable'}

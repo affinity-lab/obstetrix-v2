@@ -1,6 +1,7 @@
 <script lang="ts">
   import AtomForge from '$lib/AtomForge.svelte';
   import { onMount }   from 'svelte';
+  import { page }      from '$app/stores';
   import type { BuildEvent } from '@obstetrix/shared';
   import './layout.css';
 
@@ -16,18 +17,35 @@
     };
     return () => es.close();
   });
+
+  const navLinks = [
+    { href: '/',               label: 'dashboard' },
+    { href: '/backups',        label: 'backups'   },
+    { href: '/settings',       label: 'settings'  },
+    { href: '/settings/nginx', label: 'nginx'     },
+  ];
+
+  function isActive(href: string, pathname: string): boolean {
+    if (href === '/') return pathname === '/';
+    return pathname.startsWith(href);
+  }
 </script>
 
 <!-- CRITICAL: AtomForge must NOT be in any runes exclusion list in svelte.config.js -->
 <AtomForge dark>
   <div class="min-h-screen bg-base text-control-c">
     <!-- Desktop top nav -->
-    <nav class="hidden sm:flex border-b border-canvas px-6 py-3 items-center gap-6">
-      <span class="font-medium text-sm text-control-c">obstetrix</span>
-      <a href="/"              class="text-muted-c text-sm hover:text-control-c transition-colors">dashboard</a>
-      <a href="/backups"       class="text-muted-c text-sm hover:text-control-c transition-colors">backups</a>
-      <a href="/settings"      class="text-muted-c text-sm hover:text-control-c transition-colors">settings</a>
-      <a href="/settings/nginx" class="text-muted-c text-sm hover:text-control-c transition-colors">nginx</a>
+    <nav class="hidden sm:flex bg-canvas border-b border-base-b px-6 h-12 items-center gap-1">
+      <span class="font-semibold text-sm text-control-c mr-4">obstetrix</span>
+      {#each navLinks as link}
+        <a
+          href={link.href}
+          class="px-3 py-1.5 rounded-md text-sm transition-colors
+                 {isActive(link.href, $page.url.pathname)
+                   ? 'bg-secondary text-control-c font-medium'
+                   : 'text-muted-c hover:text-control-c hover:bg-secondary/50'}"
+        >{link.label}</a>
+      {/each}
     </nav>
 
     <main class="px-4 sm:px-6 py-4 sm:py-6 pb-24 sm:pb-6">
@@ -35,25 +53,25 @@
     </main>
 
     <!-- Mobile bottom tab bar -->
-    <nav class="sm:hidden fixed bottom-0 left-0 right-0 border-t border-canvas bg-base
-                flex items-center justify-around px-2 py-2
-                pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]">
-      <a href="/"              class="flex flex-col items-center gap-1 text-muted-c hover:text-control-c text-xs py-1 px-3">
-        <span class="text-base">◈</span>
-        <span>dashboard</span>
-      </a>
-      <a href="/backups"       class="flex flex-col items-center gap-1 text-muted-c hover:text-control-c text-xs py-1 px-3">
-        <span class="text-base">⊞</span>
-        <span>backups</span>
-      </a>
-      <a href="/settings"      class="flex flex-col items-center gap-1 text-muted-c hover:text-control-c text-xs py-1 px-3">
-        <span class="text-base">⚙</span>
-        <span>settings</span>
-      </a>
-      <a href="/settings/nginx" class="flex flex-col items-center gap-1 text-muted-c hover:text-control-c text-xs py-1 px-3">
-        <span class="text-base">⊟</span>
-        <span>nginx</span>
-      </a>
+    <nav class="sm:hidden fixed bottom-0 left-0 right-0 border-t border-base-b bg-canvas
+                flex items-center justify-around px-2
+                pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] pt-1">
+      {#each navLinks as link}
+        {@const active = isActive(link.href, $page.url.pathname)}
+        <a
+          href={link.href}
+          class="flex flex-col items-center gap-0.5 py-1 px-3 rounded-md text-xs transition-colors
+                 {active ? 'text-accent font-medium' : 'text-muted-c hover:text-control-c'}"
+        >
+          <span class="text-sm leading-none">
+            {#if link.label === 'dashboard'}⬡
+            {:else if link.label === 'backups'}⊚
+            {:else if link.label === 'settings'}⊛
+            {:else}⊟{/if}
+          </span>
+          <span>{link.label}</span>
+        </a>
+      {/each}
     </nav>
   </div>
 </AtomForge>

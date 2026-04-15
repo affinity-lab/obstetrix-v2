@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page }    from '$app/stores';
   import { onMount } from 'svelte';
-  import { Badge, Button } from '@atom-forge/ui';
+  import { Chip, Button, Breadcrumb, Textarea, getToastManager } from '@atom-forge/ui';
   import { api } from '$lib/tango.js';
 
   const siteName = $derived(decodeURIComponent($page.params.site));
@@ -13,7 +13,9 @@
   let testing   = $state(false);
   let reloading = $state(false);
   let dirty     = $derived(content !== original);
-  let result    = $state<{ text: string; ok: boolean } | null>(null);
+  let testResult = $state<{ text: string; ok: boolean } | null>(null);
+
+  const toast = getToastManager();
 
   onMount(async () => {
     try {
@@ -21,85 +23,79 @@
       content = res.content;
       original = res.content;
     } catch (e) {
-      result = { text: String(e), ok: false };
+      testResult = { text: String(e), ok: false };
     } finally {
       loading = false;
     }
   });
 
   async function save() {
-    saving = true; result = null;
+    saving = true; testResult = null;
     try {
       const res = await api.nginx.set.$command({ name: siteName, content });
       original = content;
-      result = { text: res.output || 'saved — nginx -t passed', ok: true };
+      testResult = { text: res.output || 'saved — nginx -t passed', ok: true };
+      toast.show('Config saved', { type: 'success' });
     } catch (e) {
-      result = { text: String(e), ok: false };
-    } finally {
-      saving = false;
-    }
+      testResult = { text: String(e), ok: false };
+    } finally { saving = false; }
   }
 
   async function testOnly() {
-    testing = true; result = null;
+    testing = true; testResult = null;
     try {
       const res = await api.nginx.test.$query(undefined);
-      result = { text: res.output || (res.ok ? 'syntax ok' : 'test failed'), ok: res.ok };
+      testResult = { text: res.output || (res.ok ? 'syntax ok' : 'test failed'), ok: res.ok };
     } catch (e) {
-      result = { text: String(e), ok: false };
-    } finally {
-      testing = false;
-    }
+      testResult = { text: String(e), ok: false };
+    } finally { testing = false; }
   }
 
   async function reloadNginx() {
-    reloading = true; result = null;
+    reloading = true; testResult = null;
     try {
       const res = await api.nginx.reload.$command(undefined);
-      result = { text: res.output || 'nginx reloaded', ok: true };
+      toast.show(res.output || 'nginx reloaded', { type: 'success' });
     } catch (e) {
-      result = { text: String(e), ok: false };
-    } finally {
-      reloading = false;
-    }
+      toast.show(String(e), { type: 'error' });
+    } finally { reloading = false; }
   }
 
   function reset() {
     content = original;
-    result = null;
+    testResult = null;
   }
 </script>
 
 <div class="flex flex-col gap-4 max-w-3xl">
-  <div class="flex items-center gap-2 text-sm flex-wrap">
-    <a href="/settings" class="text-muted-c hover:text-control-c">settings</a>
-    <span class="text-muted-c">/</span>
-    <a href="/settings/nginx" class="text-muted-c hover:text-control-c">nginx</a>
-    <span class="text-muted-c">/</span>
-    <span class="text-control-c font-mono">{siteName}</span>
+  <div class="flex items-center gap-2 flex-wrap">
+    <Breadcrumb items={[
+      { label: 'settings', href: '/settings' },
+      { label: 'nginx', href: '/settings/nginx' },
+      { label: siteName },
+    ]} />
     {#if dirty}
-      <Badge color="blue">unsaved</Badge>
+      <Chip color="blue">unsaved</Chip>
     {/if}
   </div>
 
   {#if loading}
     <p class="text-muted-c text-sm">loading...</p>
   {:else}
-    <textarea
+    <Textarea
       bind:value={content}
-      spellcheck="false"
-      class="bg-raised border border-canvas rounded-lg font-mono text-xs text-control-c
-             p-4 h-[60vh] resize-none outline-none focus:border-accent leading-relaxed"
-    ></textarea>
+      monospace
+      rows={28}
+    />
 
     <div class="flex gap-2 flex-wrap items-center">
-      <Button small onclick={save} disabled={saving || !dirty}>
+      <Button small onclick={save} disabled={saving || !dirty} loading={saving}>
         {saving ? 'saving…' : 'save'}
       </Button>
-      <Button ghost small onclick={testOnly} disabled={testing}>
+      <Button ghost small onclick={testOnly} loading={testing}>
         {testing ? 'testing…' : 'test config'}
       </Button>
-      <Button ghost small onclick={reloadNginx} disabled={reloading}>
+      <Button ghost small onclick={reloadNginx} loading={reloading}>
         {reloading ? 'reloading…' : 'reload nginx'}
       </Button>
       {#if dirty}
@@ -107,17 +103,15 @@
       {/if}
     </div>
 
-    {#if result}
-      <pre class="text-xs rounded-lg px-4 py-3 font-mono whitespace-pre-wrap
-                  {result.ok
-                    ? 'bg-raised text-accent border border-canvas'
-                    : 'bg-raised text-red-400 border border-canvas'}">{result.text}</pre>
+    {#if testResult}
+      <pre class="text-xs rounded-lg px-4 py-3 font-mono whitespace-pre-wrap border border-base-b
+                  {testResult.ok ? 'bg-raised text-green-400' : 'bg-raised text-red-400'}">{testResult.text}</pre>
     {/if}
 
-    <div class="border-t border-canvas pt-3">
+    <div class="border-t border-base-b pt-3">
       <p class="text-muted-c text-xs">
         Editing <span class="font-mono">/etc/nginx/sites-available/{siteName}</span>.
-        <strong>Save</strong> writes the file and runs <span class="font-mono">nginx -t</span> — it restores the previous version if the test fails.
+        <strong>Save</strong> writes the file and runs <span class="font-mono">nginx -t</span> — restores the previous version if the test fails.
         <strong>Reload nginx</strong> applies the new config to live traffic.
       </p>
     </div>

@@ -1,0 +1,29 @@
+{
+	"/": [],
+	"/api/backup/download": [
+		"src/routes/api/backup/download/+server.ts"
+	],
+	"/api/events": [
+		"src/routes/api/events/+server.ts"
+	],
+	"/api/logs/[project]": [
+		"src/routes/api/logs/[project]/+server.ts"
+	],
+	"/api/tango": [
+		"src/routes/api/tango/+server.ts"
+	],
+	"/backups": [],
+	"/backups/[name]": [],
+	"/project/[name]": [
+		"src/routes/project/[name]/+page.server.ts"
+	],
+	"/project/[name]/deploys": [],
+	"/project/[name]/deploys/[deployId]": [],
+	"/project/[name]/journal": [],
+	"/project/[name]/logs": [],
+	"/settings": [],
+	"/settings/nginx": [],
+	"/settings/nginx/[site]": [],
+	"/settings/project/[name]": [],
+	"/settings/secrets": []
+}

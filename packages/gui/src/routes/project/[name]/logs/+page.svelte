@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page }    from '$app/stores';
   import { onMount } from 'svelte';
-  import { Button }  from '@atom-forge/ui';
+  import { Button, Breadcrumb }  from '@atom-forge/ui';
   import { isPhaseHeader } from '$lib/format.js';
   import type { BuildEvent } from '@obstetrix/shared';
 
@@ -91,17 +91,24 @@
 
 <div class="flex flex-col gap-3 h-full">
   <div class="flex items-center gap-3 flex-wrap">
-    <a href="/project/{name}" class="text-muted-c text-sm hover:text-control-c">← {name}</a>
-    <span class="text-control-c text-sm">live logs</span>
+    <Breadcrumb items={[
+      { label: 'dashboard', href: '/' },
+      { label: name, href: `/project/${name}` },
+      { label: 'live logs' },
+    ]} />
+    <span class="flex-1"></span>
     {#if connected}
-      <span class="text-xs text-accent">● live</span>
+      <span class="inline-flex items-center gap-1 text-xs text-green-500">
+        <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>live
+      </span>
     {:else}
-      <span class="text-xs text-red-400">○ reconnecting…</span>
+      <span class="inline-flex items-center gap-1 text-xs text-red-400">
+        <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>reconnecting…
+      </span>
     {/if}
     <span class="text-muted-c text-xs">{lines.length} line{lines.length === 1 ? '' : 's'}</span>
-    <span class="flex-1"></span>
     {#if !autoScroll}
-      <Button micro ghost onclick={scrollToBottom}>↓ scroll to bottom</Button>
+      <Button micro ghost onclick={scrollToBottom}>↓ bottom</Button>
     {/if}
     <Button micro ghost onclick={() => lines = []}>clear</Button>
   </div>
@@ -109,7 +116,7 @@
   <div
     bind:this={logEl}
     onscroll={handleScroll}
-    class="bg-raised border border-canvas rounded-lg font-mono text-xs
+    class="bg-raised border border-base-b rounded-lg font-mono text-xs
            h-[75vh] overflow-y-auto p-4"
   >
     {#if lines.length === 0}

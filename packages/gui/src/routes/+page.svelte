@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Badge, Button } from '@atom-forge/ui';
+  import { Chip, Button, Input, EmptyState } from '@atom-forge/ui';
+  import { IconServer } from '@tabler/icons-svelte';
   import { api } from '$lib/tango.js';
   import { relativeTime } from '$lib/format.js';
   import { BUILD_TEMPLATES, templateToConf } from '$lib/templates.js';
@@ -15,7 +16,7 @@
   let newName       = $state('');
   let newRepoUrl    = $state('');
   let newBranch     = $state('main');
-  let newPorts      = $state(4);
+  let newPorts      = $state('4');
   let selectedTpl   = $state<string>('');
   let creating      = $state(false);
   let createError   = $state<string | null>(null);
@@ -73,7 +74,7 @@
 
   function cancelCreate() {
     showCreate = false;
-    newName = ''; newRepoUrl = ''; newBranch = 'main'; newPorts = 4; selectedTpl = '';
+    newName = ''; newRepoUrl = ''; newBranch = 'main'; newPorts = '4'; selectedTpl = '';
     createError = null;
   }
 
@@ -93,7 +94,7 @@
         name:    newName.trim(),
         repoUrl: newRepoUrl.trim(),
         branch:  newBranch.trim() || 'main',
-        ports:   newPorts,
+        ports:   parseInt(newPorts) || 4,
       });
       // If a template was chosen, pre-fill project.conf
       if (selectedTpl) {
@@ -115,12 +116,12 @@
     }
   }
 
-  function statusColor(status: ProjectStatus): 'accent' | 'red' | 'blue' | undefined {
+  function statusColor(status: ProjectStatus): 'green' | 'red' | 'blue' | 'base' {
     switch (status) {
-      case 'running':  return 'accent';
+      case 'running':  return 'green';
       case 'failed':   return 'red';
       case 'building': return 'blue';
-      default:         return undefined;
+      default:         return 'base';
     }
   }
 </script>
@@ -133,20 +134,20 @@
 </div>
 
 {#if showCreate}
-  <div class="bg-raised border border-canvas rounded-lg px-4 py-4 flex flex-col gap-4 mb-4">
+  <div class="bg-raised border border-base-b rounded-lg px-4 py-4 flex flex-col gap-4 mb-4">
     <span class="text-control-c text-sm font-medium">new project</span>
 
     <!-- Template picker -->
-    <div class="flex flex-col gap-1">
+    <div class="flex flex-col gap-1.5">
       <label class="text-muted-c text-xs">template (optional)</label>
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
         {#each BUILD_TEMPLATES as tpl}
           <button
             onclick={() => selectedTpl = selectedTpl === tpl.id ? '' : tpl.id}
-            class="text-left px-3 py-2 rounded border text-xs transition-colors
+            class="text-left px-3 py-2 rounded-md border text-xs transition-colors
                    {selectedTpl === tpl.id
-                     ? 'border-accent text-control-c bg-base'
-                     : 'border-canvas text-muted-c hover:text-control-c hover:border-canvas'}"
+                     ? 'border-accent text-control-c bg-secondary'
+                     : 'border-base-b text-muted-c hover:text-control-c hover:border-accent/50 hover:bg-secondary/50'}"
           >
             <div class="font-medium">{tpl.label}</div>
             <div class="text-xs opacity-70 mt-0.5">{tpl.description}</div>
@@ -164,43 +165,21 @@
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <div class="flex flex-col gap-1">
-        <label class="text-muted-c text-xs">name <span class="text-red-400">*</span></label>
-        <input
-          bind:value={newName}
-          placeholder="my-app"
-          class="bg-base border border-canvas rounded font-mono text-xs text-control-c
-                 px-3 py-2 outline-none focus:border-accent"
-        />
+      <div class="flex flex-col gap-1.5">
+        <label class="text-muted-c text-xs">name <span class="text-red-500">*</span></label>
+        <Input bind:value={newName} placeholder="my-app" monospace compact />
       </div>
-      <div class="flex flex-col gap-1">
-        <label class="text-muted-c text-xs">repo URL <span class="text-red-400">*</span></label>
-        <input
-          bind:value={newRepoUrl}
-          placeholder="https://github.com/org/repo"
-          class="bg-base border border-canvas rounded text-xs text-control-c
-                 px-3 py-2 outline-none focus:border-accent"
-        />
+      <div class="flex flex-col gap-1.5">
+        <label class="text-muted-c text-xs">repo URL <span class="text-red-500">*</span></label>
+        <Input bind:value={newRepoUrl} placeholder="https://github.com/org/repo" compact />
       </div>
-      <div class="flex flex-col gap-1">
+      <div class="flex flex-col gap-1.5">
         <label class="text-muted-c text-xs">branch</label>
-        <input
-          bind:value={newBranch}
-          placeholder="main"
-          class="bg-base border border-canvas rounded text-xs text-control-c
-                 px-3 py-2 outline-none focus:border-accent"
-        />
+        <Input bind:value={newBranch} placeholder="main" monospace compact />
       </div>
-      <div class="flex flex-col gap-1">
+      <div class="flex flex-col gap-1.5">
         <label class="text-muted-c text-xs">max instances (port count)</label>
-        <input
-          type="number"
-          bind:value={newPorts}
-          min="1"
-          max="16"
-          class="bg-base border border-canvas rounded text-xs text-control-c
-                 px-3 py-2 outline-none focus:border-accent"
-        />
+        <Input bind:value={newPorts} type="integer" placeholder="4" compact />
       </div>
     </div>
 
@@ -208,7 +187,7 @@
       <p class="text-red-400 text-xs">{createError}</p>
     {/if}
     <div class="flex gap-2">
-      <Button small onclick={createProject} disabled={creating}>
+      <Button small onclick={createProject} loading={creating}>
         {creating ? 'creating…' : 'create'}
       </Button>
       <Button ghost small onclick={cancelCreate} disabled={creating}>cancel</Button>
@@ -221,24 +200,28 @@
 {:else if error}
   <p class="text-red-400 text-sm">{error}</p>
 {:else if projects.length === 0}
-  <p class="text-muted-c text-sm">no projects — create one above or run
-    <span class="font-mono">obstetrix-ctl project create &lt;name&gt;</span>
-  </p>
+  <EmptyState
+    icon={IconServer}
+    title="No projects yet"
+    description="Create a project or run obstetrix-ctl project create <name>"
+  >
+    <Button onclick={() => showCreate = true}>new project</Button>
+  </EmptyState>
 {:else}
   <div class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
     {#each projects as project (project.name)}
       {@const isDeploying = deployingSet.has(project.name)}
-      <div class="bg-raised border rounded-lg px-4 py-4 flex flex-col gap-3 transition-colors
-                  {project.status === 'building' ? 'border-blue-500/60 shadow-[0_0_0_1px_rgba(59,130,246,0.3)] animate-pulse' : 'border-canvas'}">
+      <div class="bg-raised border border-base-b rounded-lg px-4 py-4 flex flex-col gap-3 transition-colors
+                  {project.status === 'building' ? 'border-blue-500/50' : ''}">
         <div class="flex items-center justify-between">
           <a href="/project/{project.name}" class="text-control-c font-medium text-sm hover:underline">
             {project.name}
           </a>
           <div class="flex items-center gap-1.5">
             {#if project.status === 'building'}
-              <span class="inline-block w-3 h-3 rounded-full border-2 border-blue-400 border-t-transparent animate-spin"></span>
+              <span class="inline-block w-2.5 h-2.5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin"></span>
             {/if}
-            <Badge color={statusColor(project.status)}>{project.status}</Badge>
+            <Chip color={statusColor(project.status)}>{project.status}</Chip>
           </div>
         </div>
 
@@ -255,8 +238,8 @@
           {/if}
         </div>
 
-        <div class="flex gap-2 mt-auto">
-          <Button small onclick={() => deploy(project.name)} disabled={isDeploying}>
+        <div class="flex gap-2 mt-auto pt-1 border-t border-base-b">
+          <Button small onclick={() => deploy(project.name)} disabled={isDeploying} loading={isDeploying}>
             {isDeploying ? 'queued…' : 'deploy'}
           </Button>
           <Button ghost small onclick={() => location.href = `/project/${project.name}`}>detail</Button>

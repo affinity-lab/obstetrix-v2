@@ -1,0 +1,158 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+	/* --- SEMANTIC SYSTEM --- */
+	--color-canvas: 0; --color-canvas-contrast: 0;
+	--color-surface: 0; --color-surface-contrast: 0;
+	--color-primary: 0; --color-primary-contrast: 0;
+	--color-accent: 0; --color-accent-contrast: 0;
+	--color-secondary: 0; --color-secondary-contrast: 0;
+	--color-muted: 0; --color-muted-contrast: 0;
+	--color-error: 0; --color-error-contrast: 0;
+	--color-frame: 0;
+	--color-control: 0;
+	--color-ring: 0;
+
+	/* --- RADIUS SYSTEM --- */
+	--radius-surface:    0.5rem;   /* 8px  — containers */
+	--radius-control:    0.375rem; /* 6px  — interactive elements */
+	--radius-control-sm: 0.25rem;  /* 4px  — small interactions */
+	--radius-fine:       0.125rem; /* 2px  — decorative details */
+}
+
+@layer theme {
+	:root, .light {
+		--color-canvas:           var(--color-stone-100);
+		--color-canvas-contrast:  var(--color-stone-950);
+		--color-surface:          var(--color-white);
+		--color-surface-contrast: var(--color-stone-900);
+		--color-primary:          var(--color-stone-950);
+		--color-primary-contrast: var(--color-stone-50);
+		--color-accent:           var(--color-orange-600);
+		--color-accent-contrast:  var(--color-white);
+		--color-secondary:        var(--color-stone-200);
+		--color-secondary-contrast: var(--color-stone-900);
+		--color-muted:            var(--color-stone-100);
+		--color-muted-contrast:   var(--color-stone-500);
+		--color-error:            var(--color-red-600);
+		--color-error-contrast:   var(--color-white);
+		--color-frame:            var(--color-stone-200);
+		--color-control:          var(--color-white);
+		--color-ring:             var(--color-orange-600);
+	}
+	.dark {
+		--color-canvas:           var(--color-stone-950);
+		--color-canvas-contrast:  var(--color-stone-50);
+		--color-surface:          var(--color-stone-900);
+		--color-surface-contrast: var(--color-stone-100);
+		--color-primary:          var(--color-stone-50);
+		--color-primary-contrast: var(--color-stone-950);
+		--color-accent:           var(--color-orange-500);
+		--color-accent-contrast:  var(--color-white);
+		--color-secondary:        var(--color-stone-800);
+		--color-secondary-contrast: var(--color-stone-100);
+		--color-muted:            var(--color-stone-800);
+		--color-muted-contrast:   var(--color-stone-400);
+		--color-error:            var(--color-red-500);
+		--color-error-contrast:   var(--color-white);
+		--color-frame:            var(--color-stone-800);
+		--color-control:          var(--color-stone-900);
+		--color-ring:             var(--color-orange-500);
+	}
+}
+
+@layer utilities {
+	.use-canvas  { @apply bg-canvas text-canvas-contrast; }
+	.use-surface { @apply bg-surface text-surface-contrast; }
+	.use-primary { @apply bg-primary text-primary-contrast; }
+	.use-accent  { @apply bg-accent text-accent-contrast; }
+	.use-secondary { @apply bg-secondary text-secondary-contrast; }
+	.use-muted   { @apply bg-muted text-muted-contrast; }
+	.use-error   { @apply bg-error text-error-contrast; }
+}
+
+@utility striped-5 {
+	background-image: repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.05) 3px, transparent 3px, transparent 6px);
+	@variant dark {
+		background-image: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.05) 3px, transparent 3px, transparent 6px);
+	}
+}
+@utility striped-10 {
+	background-image: repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1) 3px, transparent 3px, transparent 6px);
+	@variant dark {
+		background-image: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1) 3px, transparent 3px, transparent 6px);
+	}
+}
+@utility striped-20 {
+	background-image: repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2) 3px, transparent 3px, transparent 6px);
+	@variant dark {
+		background-image: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.2) 3px, transparent 3px, transparent 6px);
+	}
+}
+@utility striped-30 {
+	background-image: repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3) 3px, transparent 3px, transparent 6px);
+	@variant dark {
+		background-image: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3) 3px, transparent 3px, transparent 6px);
+	}
+}
+@utility striped-40 {
+	background-image: repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4) 3px, transparent 3px, transparent 6px);
+	@variant dark {
+		background-image: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.4) 3px, transparent 3px, transparent 6px);
+	}
+}
+@utility striped-50 {
+	background-image: repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5) 3px, transparent 3px, transparent 6px);
+	@variant dark {
+		background-image: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5) 3px, transparent 3px, transparent 6px);
+	}
+}
+
+@keyframes skeleton-shimmer {
+	0%   { transform: translateX(-100%); }
+	100% { transform: translateX(100%); }
+}
+
+@utility skeleton-shimmer {
+	&::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(
+			90deg,
+			transparent 0%,
+			var(--color-secondary) 50%,
+			transparent 100%
+		);
+		animation: skeleton-shimmer 1.6s ease-in-out infinite;
+	}
+}
+
+@layer utilities {
+	.fancy-scroll {
+		scrollbar-width: thin;
+		scrollbar-color: color-mix(in srgb, var(--color-muted-contrast) 50%, transparent) transparent;
+	}
+
+	.fancy-scroll::-webkit-scrollbar {
+		width: 14px;
+		height: 14px;
+	}
+
+	.fancy-scroll::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	.fancy-scroll::-webkit-scrollbar-thumb {
+		background-color: color-mix(in srgb, var(--color-muted-contrast) 50%, transparent);
+		border-radius: 10px;
+		border: 4px solid rgba(0, 0, 0, 0);
+		background-clip: padding-box;
+	}
+
+	.fancy-scroll::-webkit-scrollbar-thumb:hover {
+		background-color: var(--color-muted-contrast);
+	}
+}

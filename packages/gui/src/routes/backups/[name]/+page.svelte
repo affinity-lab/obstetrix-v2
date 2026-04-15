@@ -1,13 +1,16 @@
 <script lang="ts">
   import { page }    from '$app/stores';
   import { onMount } from 'svelte';
-  import { Button }  from '@atom-forge/ui';
+  import { Button, Breadcrumb, EmptyState, getToastManager } from '@atom-forge/ui';
+  import { IconArchive } from '@tabler/icons-svelte';
   import { api }     from '$lib/tango.js';
   import type { BackupResult } from '@obstetrix/shared';
 
   const name  = $derived($page.params.name);
   let backups = $state<BackupResult[]>([]);
   let running = $state(false);
+
+  const toast = getToastManager();
 
   onMount(async () => {
     backups = await api.backup.list.$query({ name });
@@ -18,6 +21,9 @@
     try {
       const result = await api.backup.run.$command({ name });
       backups = [result, ...backups];
+      toast.show('Backup created', { type: 'success' });
+    } catch (e) {
+      toast.show(`Backup failed: ${e}`, { type: 'error' });
     } finally {
       running = false;
     }
@@ -31,29 +37,32 @@
 
 <div class="flex flex-col gap-4 max-w-2xl">
   <div class="flex items-center justify-between">
-    <div class="flex items-center gap-2 text-sm">
-      <a href="/backups" class="text-muted-c hover:text-control-c">backups</a>
-      <span class="text-muted-c">/</span>
-      <span class="text-control-c">{name}</span>
-    </div>
-    <Button small onclick={runBackup} disabled={running}>
+    <Breadcrumb items={[
+      { label: 'backups', href: '/backups' },
+      { label: name },
+    ]} />
+    <Button small onclick={runBackup} loading={running}>
       {running ? 'running...' : 'backup now'}
     </Button>
   </div>
 
   {#if backups.length === 0}
-    <p class="text-muted-c text-sm">no backups yet</p>
+    <EmptyState
+      icon={IconArchive}
+      title="No backups yet"
+      description="Click backup now to create the first backup"
+    />
   {:else}
-    <div class="bg-raised border border-canvas rounded-lg overflow-hidden">
+    <div class="bg-raised border border-base-b rounded-lg overflow-hidden">
       {#each backups as b}
-        <div class="flex items-center gap-3 px-4 py-3 border-b border-canvas last:border-0 text-sm">
+        <div class="flex items-center gap-3 px-4 py-3 border-b border-base-b last:border-0 text-sm">
           <span class="text-muted-c text-xs flex-1">{b.createdAt}</span>
           <span class="font-mono text-xs text-muted-c">{fmt(b.sizeBytes)}</span>
           <a
             href="/api/backup/download?path={encodeURIComponent(b.path)}"
             class="text-muted-c hover:text-control-c text-xs"
             download
-          >download</a>
+          >↓ download</a>
         </div>
       {/each}
     </div>
