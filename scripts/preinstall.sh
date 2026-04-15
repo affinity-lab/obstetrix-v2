@@ -125,6 +125,10 @@ _install_gui() {
     require('fs').writeFileSync('/opt/$PLATFORM/gui/package.json', JSON.stringify(pkg, null, 2));
   "
   cp "$REPO_ROOT/.npmrc" "/opt/${PLATFORM}/gui/"
+  # Bun does not expand ${VAR} syntax in .npmrc — write the actual token value in place
+  if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+    sed -i "s|\${GITHUB_TOKEN}|${GITHUB_TOKEN}|g" "/opt/${PLATFORM}/gui/.npmrc"
+  fi
   info "installing gui runtime dependencies..."
   (cd "/opt/${PLATFORM}/gui" && bun install --production)
   chown -R obstetrix:obstetrix "/opt/${PLATFORM}/gui"
