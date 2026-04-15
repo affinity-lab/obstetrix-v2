@@ -117,24 +117,18 @@ _install_gui() {
   info "installing gui to /opt/${PLATFORM}/gui..."
   mkdir -p "/opt/${PLATFORM}/gui"
   rsync -a --delete "$REPO_ROOT/packages/gui/build/" "/opt/${PLATFORM}/gui/build/"
-  # Strip workspace:* deps (bundled at build time) so bun install works outside the monorepo
+  # Strip workspace:* and private-registry deps — all are bundled by Vite at build time
+  # and must not be re-downloaded during production install outside the monorepo.
   bun -e "
     const pkg = JSON.parse(require('fs').readFileSync('$REPO_ROOT/packages/gui/package.json','utf8'));
-    for (const [k,v] of Object.entries(pkg.dependencies ?? {}))
-      if (v.startsWith('workspace:')) delete pkg.dependencies[k];
+    const PRIVATE_SCOPES = ['@atom-forge', '@nano-forge', '@tabler'];
+    for (const [k,v] of Object.entries(pkg.dependencies ?? {})) {
+      if (v.startsWith('workspace:')) { delete pkg.dependencies[k]; continue; }
+      if (PRIVATE_SCOPES.some(s => k.startsWith(s))) delete pkg.dependencies[k];
+    }
     require('fs').writeFileSync('/opt/$PLATFORM/gui/package.json', JSON.stringify(pkg, null, 2));
   "
   cp "$REPO_ROOT/.npmrc" "/opt/${PLATFORM}/gui/"
-  # Bun does not expand ${VAR} syntax in .npmrc — write the actual token value in place
-  if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-    sed -i "s|\${GITHUB_TOKEN}|${GITHUB_TOKEN}|g" "/opt/${PLATFORM}/gui/.npmrc"
-  fi
-  # Also write bunfig.toml — bun's native config is more reliable than .npmrc for private registries
-  cat > "/opt/${PLATFORM}/gui/bunfig.toml" << EOF
-[install.scopes]
-"@atom-forge" = { registry = "https://npm.pkg.github.com/", token = "${GITHUB_TOKEN}" }
-"@nano-forge" = { registry = "https://npm.pkg.github.com/", token = "${GITHUB_TOKEN}" }
-EOF
   info "installing gui runtime dependencies..."
   (cd "/opt/${PLATFORM}/gui" && bun install --production)
   chown -R obstetrix:obstetrix "/opt/${PLATFORM}/gui"
