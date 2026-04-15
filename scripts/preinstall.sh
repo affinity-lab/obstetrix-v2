@@ -129,6 +129,12 @@ _install_gui() {
   if [[ -n "${GITHUB_TOKEN:-}" ]]; then
     sed -i "s|\${GITHUB_TOKEN}|${GITHUB_TOKEN}|g" "/opt/${PLATFORM}/gui/.npmrc"
   fi
+  # Also write bunfig.toml — bun's native config is more reliable than .npmrc for private registries
+  cat > "/opt/${PLATFORM}/gui/bunfig.toml" << EOF
+[install.scopes]
+"@atom-forge" = { registry = "https://npm.pkg.github.com/", token = "${GITHUB_TOKEN}" }
+"@nano-forge" = { registry = "https://npm.pkg.github.com/", token = "${GITHUB_TOKEN}" }
+EOF
   info "installing gui runtime dependencies..."
   (cd "/opt/${PLATFORM}/gui" && bun install --production)
   chown -R obstetrix:obstetrix "/opt/${PLATFORM}/gui"
