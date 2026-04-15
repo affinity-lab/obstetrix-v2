@@ -106,7 +106,7 @@
         <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>reconnecting…
       </span>
     {/if}
-    <span class="text-muted-c text-xs">{lines.length} line{lines.length === 1 ? '' : 's'}</span>
+    <span class="text-muted-contrast text-xs">{lines.length} line{lines.length === 1 ? '' : 's'}</span>
     {#if !autoScroll}
       <Button micro ghost onclick={scrollToBottom}>↓ bottom</Button>
     {/if}
@@ -116,19 +116,19 @@
   <div
     bind:this={logEl}
     onscroll={handleScroll}
-    class="bg-raised border border-base-b rounded-lg font-mono text-xs
+    class="bg-surface border border-frame rounded-lg font-mono text-xs
            h-[75vh] overflow-y-auto p-4"
   >
     {#if lines.length === 0}
-      <span class="text-muted-c">waiting for log output…</span>
+      <span class="text-muted-contrast">waiting for log output…</span>
     {:else}
       {#each lines as line}
         <div class="flex gap-2 leading-5
                     {line.kind === 'phase'  ? 'text-accent' :
                      line.kind === 'error'  ? 'text-red-400' :
                      line.kind === 'meta'   ? 'text-blue-400' :
-                                             'text-control-c'}">
-          <span class="text-muted-c select-none shrink-0">[{formatTs(line.ts)}]</span>
+                                             'text-canvas-contrast'}">
+          <span class="text-muted-contrast select-none shrink-0">[{formatTs(line.ts)}]</span>
           <span class="whitespace-pre-wrap break-all">{line.text}</span>
         </div>
       {/each}

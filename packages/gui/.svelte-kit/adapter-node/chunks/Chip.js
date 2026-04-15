@@ -1,4 +1,4 @@
-import { h as attributes, i as clsx, f as derived } from "./renderer.js";
+import { j as attributes, h as clsx, f as derived } from "./renderer.js";
 import { t as twMerge } from "./bundle-mjs.js";
 import { I as Icon } from "./Icon.js";
 function Chip($$renderer, $$props) {

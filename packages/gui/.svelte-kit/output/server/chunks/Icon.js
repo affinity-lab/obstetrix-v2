@@ -1,4 +1,4 @@
-import { r as run, o as spread_props } from "./renderer.js";
+import { r as run, p as spread_props } from "./renderer.js";
 import { t as twMerge } from "./bundle-mjs.js";
 const ICON_STROKE_DEFAULT = 4;
 function defineIcon(icon, stroke = ICON_STROKE_DEFAULT) {

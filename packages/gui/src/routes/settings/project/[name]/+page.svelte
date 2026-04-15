@@ -222,7 +222,7 @@
 
         <!-- Build command -->
         <div class="flex flex-col gap-1.5">
-          <label class="text-muted-c text-xs font-medium uppercase tracking-wide">
+          <label class="text-muted-contrast text-xs font-medium uppercase tracking-wide">
             build command
             <span class="normal-case font-normal ml-1 opacity-70">— runs in /obstetrix-projects/_work/{name}/</span>
           </label>
@@ -232,7 +232,7 @@
             monospace
             rows={4}
           />
-          <p class="text-muted-c text-xs">
+          <p class="text-muted-contrast text-xs">
             Use <span class="font-mono">&amp;&amp;</span> to chain commands.
             Port is available as <span class="font-mono">$PORT</span> at runtime (not during build).
           </p>
@@ -244,8 +244,8 @@
             {#each BUILD_TEMPLATES as tpl}
               <button
                 onclick={() => applyTemplate(tpl.id)}
-                class="text-left px-3 py-2 rounded-md border border-base-b text-xs
-                       text-muted-c hover:text-control-c hover:border-accent/50 hover:bg-secondary/50 transition-colors"
+                class="text-left px-3 py-2 rounded-md border border-frame text-xs
+                       text-muted-contrast hover:text-canvas-contrast hover:border-accent/50 hover:bg-secondary/50 transition-colors"
               >
                 <div class="font-medium">{tpl.label}</div>
                 <div class="opacity-70 mt-0.5 font-mono">{tpl.buildCmd.slice(0, 32)}{tpl.buildCmd.length > 32 ? '…' : ''}</div>
@@ -257,47 +257,47 @@
           <Button ghost small onclick={() => showTemplates = true}>load template…</Button>
         {/if}
 
-        <hr class="border-base-b" />
+        <hr class="border-frame" />
 
         <!-- Source -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div class="flex flex-col gap-1.5">
-            <label class="text-muted-c text-xs font-medium uppercase tracking-wide">branch</label>
+            <label class="text-muted-contrast text-xs font-medium uppercase tracking-wide">branch</label>
             <Input bind:value={branch} placeholder="main" monospace compact />
           </div>
           <div class="flex flex-col gap-1.5">
-            <label class="text-muted-c text-xs font-medium uppercase tracking-wide">persistent dirs</label>
+            <label class="text-muted-contrast text-xs font-medium uppercase tracking-wide">persistent dirs</label>
             <Input bind:value={persistentDirs} placeholder="uploads,data" monospace compact />
-            <p class="text-muted-c text-xs">comma-separated, relative to app dir — survive all deploys</p>
+            <p class="text-muted-contrast text-xs">comma-separated, relative to app dir — survive all deploys</p>
           </div>
         </div>
 
-        <hr class="border-base-b" />
+        <hr class="border-frame" />
 
         <!-- Health check -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div class="flex flex-col gap-1.5">
-            <label class="text-muted-c text-xs font-medium uppercase tracking-wide">health check URL</label>
+            <label class="text-muted-contrast text-xs font-medium uppercase tracking-wide">health check URL</label>
             <Input bind:value={healthUrl} placeholder="http://127.0.0.1:$PORT/health" monospace compact />
-            <p class="text-muted-c text-xs">must return 2xx after each instance restart</p>
+            <p class="text-muted-contrast text-xs">must return 2xx after each instance restart</p>
           </div>
           <div class="flex flex-col gap-1.5">
-            <label class="text-muted-c text-xs font-medium uppercase tracking-wide">health timeout (seconds)</label>
+            <label class="text-muted-contrast text-xs font-medium uppercase tracking-wide">health timeout (seconds)</label>
             <Input bind:value={healthTimeout} type="integer" placeholder="60" compact />
           </div>
         </div>
 
-        <hr class="border-base-b" />
+        <hr class="border-frame" />
 
         <!-- Behaviour -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="flex flex-col gap-1.5">
-            <label class="text-muted-c text-xs font-medium uppercase tracking-wide">default instances</label>
+            <label class="text-muted-contrast text-xs font-medium uppercase tracking-wide">default instances</label>
             <Input bind:value={defaultInstances} type="integer" placeholder="1" compact />
-            <p class="text-muted-c text-xs">how many instances start on first deploy</p>
+            <p class="text-muted-contrast text-xs">how many instances start on first deploy</p>
           </div>
           <div class="flex flex-col gap-3">
-            <label class="text-muted-c text-xs font-medium uppercase tracking-wide">behaviour</label>
+            <label class="text-muted-contrast text-xs font-medium uppercase tracking-wide">behaviour</label>
             <Switch bind:value={rollbackOnFail} label={{ on: 'auto-rollback on failure', off: 'no rollback on failure' }} />
             <Switch bind:value={autoDeploy} label={{ on: 'auto-deploy new commits', off: 'manual deploy only' }} />
           </div>
@@ -325,8 +325,8 @@
             {#each BUILD_TEMPLATES as tpl}
               <button
                 onclick={() => applyTemplate(tpl.id)}
-                class="text-left px-3 py-2 rounded-md border border-base-b text-xs
-                       text-muted-c hover:text-control-c hover:border-accent/50 hover:bg-secondary/50 transition-colors"
+                class="text-left px-3 py-2 rounded-md border border-frame text-xs
+                       text-muted-contrast hover:text-canvas-contrast hover:border-accent/50 hover:bg-secondary/50 transition-colors"
               >
                 <div class="font-medium">{tpl.label}</div>
                 <div class="opacity-70 mt-0.5 font-mono">{tpl.buildCmd.slice(0, 30)}{tpl.buildCmd.length > 30 ? '…' : ''}</div>
@@ -354,7 +354,7 @@
           monospace
           rows={16}
         />
-        <p class="text-muted-c text-xs">
+        <p class="text-muted-contrast text-xs">
           Use <span class="font-mono">$&#123;VAR&#125;</span> to substitute values from
           <span class="font-mono">obstetrix.conf</span> at deploy time.
         </p>
@@ -388,14 +388,14 @@
   </Tabs>
 
   <!-- ── Danger zone ────────────────────────────────────── -->
-  <div class="border-t border-base-b pt-4 flex flex-col gap-3 mt-2">
-    <span class="text-muted-c text-xs uppercase tracking-wide">danger zone</span>
+  <div class="border-t border-frame pt-4 flex flex-col gap-3 mt-2">
+    <span class="text-muted-contrast text-xs uppercase tracking-wide">danger zone</span>
     {#if !showDelete}
       <div>
         <Button destructive small onclick={() => showDelete = true}>delete project…</Button>
       </div>
     {:else}
-      <p class="text-muted-c text-xs">
+      <p class="text-muted-contrast text-xs">
         Stops all instances and removes config and port allocation.
         App directories are {removeData ? 'deleted' : 'kept'}.
         State files and deploy logs are always preserved.

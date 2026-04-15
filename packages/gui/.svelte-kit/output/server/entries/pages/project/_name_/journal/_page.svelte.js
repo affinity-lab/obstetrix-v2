@@ -1,4 +1,4 @@
-import { l as ssr_context, c as escape_html, f as derived, e as ensure_array_like, a as attr_class, i as clsx, g as store_get, u as unsubscribe_stores } from "../../../../../chunks/renderer.js";
+import { m as ssr_context, c as escape_html, f as derived, e as ensure_array_like, a as attr_class, h as clsx, g as store_get, u as unsubscribe_stores } from "../../../../../chunks/renderer.js";
 import { p as page } from "../../../../../chunks/stores.js";
 import { a as api } from "../../../../../chunks/tango.js";
 import { B as Breadcrumb } from "../../../../../chunks/Breadcrumb.js";
@@ -40,7 +40,7 @@ function _page($$renderer, $$props) {
       const l = line.toLowerCase();
       if (l.includes("error") || l.includes("fatal") || l.includes("panic")) return "text-red-400";
       if (l.includes("warn")) return "text-yellow-400";
-      return "text-control-c";
+      return "text-canvas-contrast";
     }
     onDestroy(() => {
       if (intervalId !== null) clearInterval(intervalId);
@@ -58,7 +58,7 @@ function _page($$renderer, $$props) {
       {
         value: lines,
         onchange: load,
-        class: "bg-control border border-base-b rounded-md h-8 text-xs text-control-c px-2 outline-none focus:ring-2 focus:ring-ring cursor-pointer"
+        class: "bg-control border border-frame rounded-md h-8 text-xs text-canvas-contrast px-2 outline-none focus:ring-2 focus:ring-ring cursor-pointer"
       },
       ($$renderer3) => {
         $$renderer3.option({ value: 100 }, ($$renderer4) => {
@@ -99,10 +99,10 @@ function _page($$renderer, $$props) {
     $$renderer2.push(`<!----></div> `);
     if (loading && !output) {
       $$renderer2.push("<!--[0-->");
-      $$renderer2.push(`<p class="text-muted-c text-sm">loading…</p>`);
+      $$renderer2.push(`<p class="text-muted-contrast text-sm">loading…</p>`);
     } else {
       $$renderer2.push("<!--[-1-->");
-      $$renderer2.push(`<div class="bg-raised border border-base-b rounded-lg font-mono text-xs p-4 overflow-auto max-h-[80vh] whitespace-pre-wrap"><!--[-->`);
+      $$renderer2.push(`<div class="bg-surface border border-frame rounded-lg font-mono text-xs p-4 overflow-auto max-h-[80vh] whitespace-pre-wrap"><!--[-->`);
       const each_array = ensure_array_like(output.split("\n"));
       for (let $$index = 0, $$length = each_array.length; $$index < $$length; $$index++) {
         let line = each_array[$$index];

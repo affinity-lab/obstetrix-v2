@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page }    from '$app/stores';
   import { onMount } from 'svelte';
-  import { Chip, Button, Breadcrumb, Input, Slider, getToastManager } from '@atom-forge/ui';
+  import { Chip, Button, Breadcrumb, Input, getToastManager } from '@atom-forge/ui';
   import { api } from '$lib/tango.js';
   import { relativeTime, formatDuration } from '$lib/format.js';
   import type { ProjectState, ProjectStatus } from '@obstetrix/shared';
@@ -12,7 +12,7 @@
   let project    = $derived<ProjectState>(data.project);
   let deploying  = $state(false);
   let rollingBack = $state(false);
-  let scaleValue  = $derived(data.scale.instances);
+  let scaleValue  = $state(data.scale.instances);
   let scaling     = $state(false);
 
   // Deploy with specific SHA
@@ -80,7 +80,7 @@
   <Breadcrumb items={[{ label: 'dashboard', href: '/' }, { label: name }]} />
 
   <div class="flex items-center gap-3">
-    <h1 class="text-control-c text-lg font-semibold">{project.name}</h1>
+    <h1 class="text-canvas-contrast text-lg font-semibold">{project.name}</h1>
     <div class="flex items-center gap-1.5">
       {#if project.status === 'building'}
         <span class="inline-block w-2.5 h-2.5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin"></span>
@@ -89,19 +89,19 @@
     </div>
   </div>
 
-  <div class="bg-raised border border-base-b rounded-lg overflow-hidden">
-    <div class="px-4 py-3 border-b border-base-b">
-      <span class="text-muted-c text-xs uppercase tracking-wide">info</span>
+  <div class="bg-surface border border-frame rounded-lg overflow-hidden">
+    <div class="px-4 py-3 border-b border-frame">
+      <span class="text-muted-contrast text-xs uppercase tracking-wide">info</span>
     </div>
     <div class="px-4 py-3 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
-      <span class="text-muted-c">SHA</span>
-      <span class="font-mono text-control-c">{project.currentSha?.slice(0, 8) ?? '—'}</span>
-      <span class="text-muted-c">branch</span>
-      <span class="text-control-c">{project.targetBranch}</span>
-      <span class="text-muted-c">repo</span>
-      <span class="text-muted-c text-xs truncate">{project.repoUrl}</span>
-      <span class="text-muted-c">last deploy</span>
-      <span class="text-control-c">
+      <span class="text-muted-contrast">SHA</span>
+      <span class="font-mono text-canvas-contrast">{project.currentSha?.slice(0, 8) ?? '—'}</span>
+      <span class="text-muted-contrast">branch</span>
+      <span class="text-canvas-contrast">{project.targetBranch}</span>
+      <span class="text-muted-contrast">repo</span>
+      <span class="text-muted-contrast text-xs truncate">{project.repoUrl}</span>
+      <span class="text-muted-contrast">last deploy</span>
+      <span class="text-canvas-contrast">
         {project.lastDeployAt ? relativeTime(project.lastDeployAt) : 'never'}
         {#if project.lastDeployOk !== null}
           · <span class={project.lastDeployOk ? 'text-green-500' : 'text-red-400'}>
@@ -109,11 +109,11 @@
           </span>
         {/if}
       </span>
-      <span class="text-muted-c">instances</span>
-      <span class="text-control-c">{project.instances} / {project.portCount}</span>
+      <span class="text-muted-contrast">instances</span>
+      <span class="text-canvas-contrast">{project.instances} / {project.portCount}</span>
       {#if project.healthCheckUrl}
-        <span class="text-muted-c">health check</span>
-        <span class="text-muted-c text-xs truncate">{project.healthCheckUrl}</span>
+        <span class="text-muted-contrast">health check</span>
+        <span class="text-muted-contrast text-xs truncate">{project.healthCheckUrl}</span>
       {/if}
     </div>
   </div>
@@ -137,8 +137,8 @@
   </div>
 
   {#if showShaInput}
-    <div class="bg-raised border border-base-b rounded-lg px-4 py-4 flex flex-col gap-3">
-      <span class="text-control-c text-sm font-medium">deploy specific SHA</span>
+    <div class="bg-surface border border-frame rounded-lg px-4 py-4 flex flex-col gap-3">
+      <span class="text-canvas-contrast text-sm font-medium">deploy specific SHA</span>
       <Input
         bind:value={deploySha}
         placeholder="full or short SHA"
@@ -155,15 +155,26 @@
   {/if}
 
   <!-- Scale slider -->
-  <div class="bg-raised border border-base-b rounded-lg px-4 py-4 flex flex-col gap-4">
-    <span class="text-control-c text-sm font-medium">scale</span>
-    <Slider
+  <div class="bg-surface border border-frame rounded-lg px-4 py-4 flex flex-col gap-4">
+    <div class="flex items-center justify-between">
+      <span class="text-canvas-contrast text-sm font-medium">scale</span>
+      <span class="text-canvas-contrast text-sm font-mono tabular-nums">{scaleValue}</span>
+    </div>
+    <input
+      type="range"
       bind:value={scaleValue}
       min={1}
       max={project.portCount}
-      showValue
+      step={1}
+      class="w-full h-1.5 rounded-full cursor-pointer appearance-none bg-frame
+             [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4
+             [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full
+             [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:cursor-pointer
+             [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4
+             [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-accent
+             [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
     />
-    <p class="text-muted-c text-xs">
+    <p class="text-muted-contrast text-xs">
       {scaleValue} instance{scaleValue === 1 ? '' : 's'} ·
       ports {project.basePort}–{project.basePort + scaleValue - 1} ·
       max {project.portCount}
@@ -176,20 +187,20 @@
   </div>
 
   {#if project.deployHistory.length > 0}
-    <div class="bg-raised border border-base-b rounded-lg overflow-hidden">
-      <div class="px-4 py-2 border-b border-base-b">
-        <span class="text-muted-c text-xs uppercase tracking-wide">deploy history</span>
+    <div class="bg-surface border border-frame rounded-lg overflow-hidden">
+      <div class="px-4 py-2 border-b border-frame">
+        <span class="text-muted-contrast text-xs uppercase tracking-wide">deploy history</span>
       </div>
       {#each project.deployHistory as record}
         <svelte:element
           this={record.deployId ? 'a' : 'div'}
           href={record.deployId ? `/project/${name}/deploys/${encodeURIComponent(record.deployId)}` : undefined}
-          class="px-4 py-2.5 border-b border-base-b last:border-0 flex items-center justify-between text-sm gap-3{record.deployId ? ' hover:bg-secondary/50 transition-colors' : ''}"
+          class="px-4 py-2.5 border-b border-frame last:border-0 flex items-center justify-between text-sm gap-3{record.deployId ? ' hover:bg-secondary/50 transition-colors' : ''}"
         >
-          <span class="font-mono text-control-c text-xs">{record.sha.slice(0, 8)}</span>
-          <span class="text-muted-c text-xs flex-1">{record.at}</span>
+          <span class="font-mono text-canvas-contrast text-xs">{record.sha.slice(0, 8)}</span>
+          <span class="text-muted-contrast text-xs flex-1">{record.at}</span>
           <Chip color={record.ok ? 'green' : 'red'}>{record.ok ? 'ok' : 'failed'}</Chip>
-          <span class="text-muted-c text-xs">{formatDuration(record.durationMs)}</span>
+          <span class="text-muted-contrast text-xs">{formatDuration(record.durationMs)}</span>
         </svelte:element>
       {/each}
     </div>

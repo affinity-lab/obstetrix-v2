@@ -1,4 +1,4 @@
-import { j as getContext, k as setContext } from "./renderer.js";
+import { k as getContext, l as setContext } from "./renderer.js";
 class PopupManager {
   parent;
   popup = void 0;

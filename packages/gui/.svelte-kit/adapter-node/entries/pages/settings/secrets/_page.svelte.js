@@ -39,7 +39,7 @@ function _page($$renderer, $$props) {
           { label: "obstetrix.conf" }
         ]
       });
-      $$renderer3.push(`<!----> <p class="text-muted-c text-xs">All settings including <code class="font-mono">GITHUB_TOKEN</code> and <code class="font-mono">PORT.*</code> assignments. Values for keys containing
+      $$renderer3.push(`<!----> <p class="text-muted-contrast text-xs">All settings including <code class="font-mono">GITHUB_TOKEN</code> and <code class="font-mono">PORT.*</code> assignments. Values for keys containing
     TOKEN / SECRET / KEY are masked by default.</p> `);
       Switch($$renderer3, {
         label: "mask secret values",

@@ -80,7 +80,7 @@
   </div>
 
   {#if loading}
-    <p class="text-muted-c text-sm">loading...</p>
+    <p class="text-muted-contrast text-sm">loading...</p>
   {:else}
     <Textarea
       bind:value={content}
@@ -104,12 +104,12 @@
     </div>
 
     {#if testResult}
-      <pre class="text-xs rounded-lg px-4 py-3 font-mono whitespace-pre-wrap border border-base-b
-                  {testResult.ok ? 'bg-raised text-green-400' : 'bg-raised text-red-400'}">{testResult.text}</pre>
+      <pre class="text-xs rounded-lg px-4 py-3 font-mono whitespace-pre-wrap border border-frame
+                  {testResult.ok ? 'bg-surface text-green-400' : 'bg-surface text-red-400'}">{testResult.text}</pre>
     {/if}
 
-    <div class="border-t border-base-b pt-3">
-      <p class="text-muted-c text-xs">
+    <div class="border-t border-frame pt-3">
+      <p class="text-muted-contrast text-xs">
         Editing <span class="font-mono">/etc/nginx/sites-available/{siteName}</span>.
         <strong>Save</strong> writes the file and runs <span class="font-mono">nginx -t</span> — restores the previous version if the test fails.
         <strong>Reload nginx</strong> applies the new config to live traffic.

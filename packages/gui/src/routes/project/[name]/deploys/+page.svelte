@@ -74,30 +74,30 @@
   </ButtonBar>
 
   {#if loading}
-    <p class="text-muted-c text-sm">loading...</p>
+    <p class="text-muted-contrast text-sm">loading...</p>
   {:else if filtered.length === 0}
-    <p class="text-muted-c text-sm">
+    <p class="text-muted-contrast text-sm">
       {filter === 'all' ? 'no deploy logs yet' : `no ${filter} deploys`}
     </p>
   {:else}
-    <div class="bg-raised border border-base-b rounded-lg overflow-hidden">
+    <div class="bg-surface border border-frame rounded-lg overflow-hidden">
       {#each filtered as log}
-        <div class="border-b border-base-b last:border-0">
+        <div class="border-b border-frame last:border-0">
           <a
             href="/project/{name}/deploys/{encodeURIComponent(log.deployId)}"
             class="flex items-center gap-3 px-4 py-3 hover:bg-secondary/50 transition-colors text-sm"
           >
-            <span class="font-mono text-control-c text-xs w-16 shrink-0">{log.sha}</span>
+            <span class="font-mono text-canvas-contrast text-xs w-16 shrink-0">{log.sha}</span>
             <div class="flex-1 min-w-0 flex flex-col gap-0.5">
-              <span class="text-control-c text-xs">{shortTime(log.startedAt)}</span>
-              <span class="text-muted-c text-xs">{relativeTime(log.startedAt)}</span>
+              <span class="text-canvas-contrast text-xs">{shortTime(log.startedAt)}</span>
+              <span class="text-muted-contrast text-xs">{relativeTime(log.startedAt)}</span>
             </div>
             {#if log.ok === null}
               <Chip color="blue">running</Chip>
             {:else}
               <Chip color={log.ok ? 'green' : 'red'}>{log.ok ? 'ok' : 'failed'}</Chip>
             {/if}
-            <span class="text-muted-c text-xs w-14 text-right shrink-0">
+            <span class="text-muted-contrast text-xs w-14 text-right shrink-0">
               {formatDuration(log.durationMs)}
             </span>
           </a>

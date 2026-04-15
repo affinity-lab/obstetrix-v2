@@ -39,7 +39,7 @@ function _page($$renderer, $$props) {
       $$renderer3.push(`<!--]--></div> `);
       {
         $$renderer3.push("<!--[0-->");
-        $$renderer3.push(`<p class="text-muted-c text-sm">loading...</p>`);
+        $$renderer3.push(`<p class="text-muted-contrast text-sm">loading...</p>`);
       }
       $$renderer3.push(`<!--]--></div>`);
     }

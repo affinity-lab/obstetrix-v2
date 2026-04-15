@@ -1,4 +1,4 @@
-import { a as attr_class, i as clsx, c as escape_html, m as sanitize_props, t as rest_props, v as fallback, h as attributes, e as ensure_array_like, w as element, p as slot, q as bind_props, o as spread_props } from "./renderer.js";
+import { a as attr_class, h as clsx, c as escape_html, o as sanitize_props, v as rest_props, w as fallback, j as attributes, e as ensure_array_like, i as element, q as slot, t as bind_props, p as spread_props } from "./renderer.js";
 import { t as twMerge } from "./bundle-mjs.js";
 import { I as Icon$1 } from "./Icon.js";
 function EmptyState($$renderer, $$props) {

@@ -75,30 +75,30 @@
   </div>
 
   {#if testOutput}
-    <pre class="text-xs rounded-lg px-4 py-3 font-mono whitespace-pre-wrap border border-base-b
-                {testOutput.ok ? 'bg-raised text-green-400' : 'bg-raised text-red-400'}">{testOutput.text}</pre>
+    <pre class="text-xs rounded-lg px-4 py-3 font-mono whitespace-pre-wrap border border-frame
+                {testOutput.ok ? 'bg-surface text-green-400' : 'bg-surface text-red-400'}">{testOutput.text}</pre>
   {/if}
 
   {#if loading}
-    <p class="text-muted-c text-sm">loading...</p>
+    <p class="text-muted-contrast text-sm">loading...</p>
   {:else if sites.length === 0}
-    <p class="text-muted-c text-sm">no configs found in /etc/nginx/sites-available/</p>
+    <p class="text-muted-contrast text-sm">no configs found in /etc/nginx/sites-available/</p>
   {:else}
-    <div class="bg-raised border border-base-b rounded-lg overflow-hidden">
-      <div class="px-4 py-2.5 border-b border-base-b">
-        <span class="text-muted-c text-xs uppercase tracking-wide">sites-available</span>
+    <div class="bg-surface border border-frame rounded-lg overflow-hidden">
+      <div class="px-4 py-2.5 border-b border-frame">
+        <span class="text-muted-contrast text-xs uppercase tracking-wide">sites-available</span>
       </div>
       {#each sites as site}
-        <div class="flex items-center gap-3 px-4 py-3 border-b border-base-b last:border-0">
+        <div class="flex items-center gap-3 px-4 py-3 border-b border-frame last:border-0">
           <a
             href="/settings/nginx/{encodeURIComponent(site.name)}"
-            class="flex-1 text-control-c text-sm font-mono hover:underline"
+            class="flex-1 text-canvas-contrast text-sm font-mono hover:underline"
           >{site.name}</a>
           <Chip color={site.enabled ? 'green' : 'base'}>
             {site.enabled ? 'enabled' : 'disabled'}
           </Chip>
           {#if toggling === site.name}
-            <span class="text-muted-c text-xs w-14">…</span>
+            <span class="text-muted-contrast text-xs w-14">…</span>
           {:else}
             <Button micro ghost onclick={() => toggleSite(site)} disabled={toggling !== null}>
               {site.enabled ? 'disable' : 'enable'}

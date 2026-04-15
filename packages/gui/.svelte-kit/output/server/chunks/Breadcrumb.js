@@ -1,4 +1,4 @@
-import { a as attr_class, i as clsx, e as ensure_array_like, d as attr, c as escape_html, f as derived } from "./renderer.js";
+import { a as attr_class, h as clsx, e as ensure_array_like, d as attr, c as escape_html, f as derived } from "./renderer.js";
 import { t as twMerge } from "./bundle-mjs.js";
 import { g as getPopupManager } from "./RenderSnippet.js";
 function Breadcrumb($$renderer, $$props) {

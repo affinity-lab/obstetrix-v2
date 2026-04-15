@@ -1,4 +1,4 @@
-import { h as attributes, b as stringify, r as run, i as clsx, x as attr_style, c as escape_html, a as attr_class, f as derived } from "./renderer.js";
+import { j as attributes, b as stringify, r as run, h as clsx, x as attr_style, c as escape_html, a as attr_class, f as derived } from "./renderer.js";
 import { t as twMerge } from "./bundle-mjs.js";
 import { I as Icon } from "./Icon.js";
 function Spinner($$renderer, $$props) {

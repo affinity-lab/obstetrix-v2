@@ -46,7 +46,7 @@
     if (entry.type === 'end')   return entry.ok ? 'text-green-400 font-medium' : 'text-red-400 font-medium';
     if (entry.level === 'error') return 'text-red-400';
     if (entry.line && isPhaseHeader(entry.line)) return 'text-accent';
-    return 'text-control-c';
+    return 'text-canvas-contrast';
   }
 
   function formatTs(iso: string): string {
@@ -72,7 +72,7 @@
         <Chip color={meta.ok ? 'green' : 'red'}>{meta.ok ? 'ok' : 'failed'}</Chip>
       {/if}
       {#if meta.durationMs > 0}
-        <span class="text-muted-c text-xs">{formatDuration(meta.durationMs)}</span>
+        <span class="text-muted-contrast text-xs">{formatDuration(meta.durationMs)}</span>
       {/if}
       {#if meta.ok !== null}
         <Button micro ghost onclick={redeploy} loading={redeploying}>
@@ -83,27 +83,27 @@
   {/if}
 
   {#if loading}
-    <p class="text-muted-c text-sm">loading...</p>
+    <p class="text-muted-contrast text-sm">loading...</p>
   {:else if entries.length === 0}
-    <p class="text-muted-c text-sm">log not found</p>
+    <p class="text-muted-contrast text-sm">log not found</p>
   {:else}
-    <div class="bg-raised border border-base-b rounded-lg font-mono text-xs p-4 overflow-auto max-h-[75vh]">
+    <div class="bg-surface border border-frame rounded-lg font-mono text-xs p-4 overflow-auto max-h-[75vh]">
       {#each entries as entry}
         {#if entry.type === 'start'}
           <div class={lineClass(entry)}>
-            <span class="text-muted-c select-none">[{formatTs(entry.ts)}]</span>
+            <span class="text-muted-contrast select-none">[{formatTs(entry.ts)}]</span>
             {' '}deploy started · sha={entry.sha?.slice(0, 8)} · project={entry.project}
           </div>
         {:else if entry.type === 'end'}
           <div class="{lineClass(entry)} mt-1">
-            <span class="text-muted-c select-none">[{formatTs(entry.ts)}]</span>
+            <span class="text-muted-contrast select-none">[{formatTs(entry.ts)}]</span>
             {' '}{entry.ok ? '✓ deploy OK' : '✗ deploy FAILED'}
             {entry.durationMs ? ` · ${formatDuration(entry.durationMs)}` : ''}
             {entry.error ? ` · ${entry.error}` : ''}
           </div>
         {:else}
           <div class={lineClass(entry)}>
-            <span class="text-muted-c select-none">[{formatTs(entry.ts)}]</span>
+            <span class="text-muted-contrast select-none">[{formatTs(entry.ts)}]</span>
             {' '}{entry.line}
           </div>
         {/if}

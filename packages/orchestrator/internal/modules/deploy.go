@@ -273,7 +273,7 @@ func (d *DeployModule) Run(ctx context.Context, proj *config.ProjectConfig, sha 
 	// 3. git fetch + checkout in _work/{name}/
 	emit("==> git fetch")
 	gitCmd := fmt.Sprintf(
-		"export HOME=/var/obstetrix GIT_TERMINAL_PROMPT=0; cd %s && git fetch origin && git checkout %s && git reset --hard %s",
+		"export HOME=/var/obstetrix GIT_TERMINAL_PROMPT=0; cd %s && git fetch --all && git checkout -f %s && git reset --hard %s",
 		proj.WorkDir, sha, sha)
 	res, err := d.svcs.Runner.Run(ctx, proj, gitCmd, lw)
 	if err != nil || res.ExitCode != 0 {

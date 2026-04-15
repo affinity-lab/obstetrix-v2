@@ -52,11 +52,11 @@ function _page($$renderer, $$props) {
       });
     } else {
       $$renderer2.push("<!--[-1-->");
-      $$renderer2.push(`<div class="bg-raised border border-base-b rounded-lg overflow-hidden"><!--[-->`);
+      $$renderer2.push(`<div class="bg-surface border border-frame rounded-lg overflow-hidden"><!--[-->`);
       const each_array = ensure_array_like(backups);
       for (let $$index = 0, $$length = each_array.length; $$index < $$length; $$index++) {
         let b = each_array[$$index];
-        $$renderer2.push(`<div class="flex items-center gap-3 px-4 py-3 border-b border-base-b last:border-0 text-sm"><span class="text-muted-c text-xs flex-1">${escape_html(b.createdAt)}</span> <span class="font-mono text-xs text-muted-c">${escape_html(fmt(b.sizeBytes))}</span> <a${attr("href", `/api/backup/download?path=${stringify(encodeURIComponent(b.path))}`)} class="text-muted-c hover:text-control-c text-xs" download="">↓ download</a></div>`);
+        $$renderer2.push(`<div class="flex items-center gap-3 px-4 py-3 border-b border-frame last:border-0 text-sm"><span class="text-muted-contrast text-xs flex-1">${escape_html(b.createdAt)}</span> <span class="font-mono text-xs text-muted-contrast">${escape_html(fmt(b.sizeBytes))}</span> <a${attr("href", `/api/backup/download?path=${stringify(encodeURIComponent(b.path))}`)} class="text-muted-contrast hover:text-canvas-contrast text-xs" download="">↓ download</a></div>`);
       }
       $$renderer2.push(`<!--]--></div>`);
     }

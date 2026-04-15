@@ -27,7 +27,7 @@ function _page($$renderer, $$props) {
     $$renderer2.push(`<!--]--> `);
     {
       $$renderer2.push("<!--[0-->");
-      $$renderer2.push(`<p class="text-muted-c text-sm">loading...</p>`);
+      $$renderer2.push(`<p class="text-muted-contrast text-sm">loading...</p>`);
     }
     $$renderer2.push(`<!--]--></div>`);
     if ($$store_subs) unsubscribe_stores($$store_subs);

@@ -53,14 +53,14 @@
       description="Click backup now to create the first backup"
     />
   {:else}
-    <div class="bg-raised border border-base-b rounded-lg overflow-hidden">
+    <div class="bg-surface border border-frame rounded-lg overflow-hidden">
       {#each backups as b}
-        <div class="flex items-center gap-3 px-4 py-3 border-b border-base-b last:border-0 text-sm">
-          <span class="text-muted-c text-xs flex-1">{b.createdAt}</span>
-          <span class="font-mono text-xs text-muted-c">{fmt(b.sizeBytes)}</span>
+        <div class="flex items-center gap-3 px-4 py-3 border-b border-frame last:border-0 text-sm">
+          <span class="text-muted-contrast text-xs flex-1">{b.createdAt}</span>
+          <span class="font-mono text-xs text-muted-contrast">{fmt(b.sizeBytes)}</span>
           <a
             href="/api/backup/download?path={encodeURIComponent(b.path)}"
-            class="text-muted-c hover:text-control-c text-xs"
+            class="text-muted-contrast hover:text-canvas-contrast text-xs"
             download
           >↓ download</a>
         </div>

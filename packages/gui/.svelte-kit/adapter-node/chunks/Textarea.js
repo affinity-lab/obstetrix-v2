@@ -1,4 +1,4 @@
-import { r as run, a as attr_class, i as clsx, d as attr, b as stringify, x as attr_style, c as escape_html, q as bind_props, f as derived } from "./renderer.js";
+import { r as run, a as attr_class, h as clsx, d as attr, b as stringify, x as attr_style, c as escape_html, t as bind_props, f as derived } from "./renderer.js";
 import { t as twMerge } from "./bundle-mjs.js";
 import { I as Icon } from "./Icon.js";
 function Switch($$renderer, $$props) {

@@ -468,7 +468,7 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 				Name string `json:"name"`
 			}
 			json.Unmarshal(req.Params, &p)
-			if strings.ContainsAny(p.Name, "/\\.") {
+			if strings.ContainsAny(p.Name, "/\\") || strings.Contains(p.Name, "..") {
 				rpcErr = "invalid config name"
 				break
 			}
@@ -485,7 +485,7 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 				Content string `json:"content"`
 			}
 			json.Unmarshal(req.Params, &p)
-			if strings.ContainsAny(p.Name, "/\\.") {
+			if strings.ContainsAny(p.Name, "/\\") || strings.Contains(p.Name, "..") {
 				rpcErr = "invalid config name"
 				break
 			}

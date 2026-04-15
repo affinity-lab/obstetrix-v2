@@ -33,17 +33,17 @@
 
 <!-- CRITICAL: AtomForge must NOT be in any runes exclusion list in svelte.config.js -->
 <AtomForge dark>
-  <div class="min-h-screen bg-base text-control-c">
+  <div class="min-h-screen bg-canvas text-canvas-contrast">
     <!-- Desktop top nav -->
-    <nav class="hidden sm:flex bg-canvas border-b border-base-b px-6 h-12 items-center gap-1">
-      <span class="font-semibold text-sm text-control-c mr-4">obstetrix</span>
+    <nav class="hidden sm:flex bg-surface border-b border-frame px-6 h-12 items-center gap-1">
+      <span class="font-semibold text-sm text-canvas-contrast mr-4">obstetrix</span>
       {#each navLinks as link}
         <a
           href={link.href}
           class="px-3 py-1.5 rounded-md text-sm transition-colors
                  {isActive(link.href, $page.url.pathname)
-                   ? 'bg-secondary text-control-c font-medium'
-                   : 'text-muted-c hover:text-control-c hover:bg-secondary/50'}"
+                   ? 'bg-secondary text-canvas-contrast font-medium'
+                   : 'text-muted-contrast hover:text-canvas-contrast hover:bg-secondary/50'}"
         >{link.label}</a>
       {/each}
     </nav>
@@ -53,7 +53,7 @@
     </main>
 
     <!-- Mobile bottom tab bar -->
-    <nav class="sm:hidden fixed bottom-0 left-0 right-0 border-t border-base-b bg-canvas
+    <nav class="sm:hidden fixed bottom-0 left-0 right-0 border-t border-frame bg-surface
                 flex items-center justify-around px-2
                 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] pt-1">
       {#each navLinks as link}
@@ -61,7 +61,7 @@
         <a
           href={link.href}
           class="flex flex-col items-center gap-0.5 py-1 px-3 rounded-md text-xs transition-colors
-                 {active ? 'text-accent font-medium' : 'text-muted-c hover:text-control-c'}"
+                 {active ? 'text-accent font-medium' : 'text-muted-contrast hover:text-canvas-contrast'}"
         >
           <span class="text-sm leading-none">
             {#if link.label === 'dashboard'}⬡

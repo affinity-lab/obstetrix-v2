@@ -61,7 +61,7 @@ function _page($$renderer, $$props) {
     let $$settled = true;
     let $$inner_renderer;
     function $$render_inner($$renderer3) {
-      $$renderer3.push(`<div class="flex items-center justify-between mb-4"><span class="text-muted-c text-xs uppercase tracking-wide">projects</span> `);
+      $$renderer3.push(`<div class="flex items-center justify-between mb-4"><span class="text-muted-contrast text-xs uppercase tracking-wide">projects</span> `);
       if (!showCreate) {
         $$renderer3.push("<!--[0-->");
         Button($$renderer3, {
@@ -78,11 +78,11 @@ function _page($$renderer, $$props) {
       $$renderer3.push(`<!--]--></div> `);
       if (showCreate) {
         $$renderer3.push("<!--[0-->");
-        $$renderer3.push(`<div class="bg-raised border border-base-b rounded-lg px-4 py-4 flex flex-col gap-4 mb-4"><span class="text-control-c text-sm font-medium">new project</span> <div class="flex flex-col gap-1.5"><label class="text-muted-c text-xs">template (optional)</label> <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"><!--[-->`);
+        $$renderer3.push(`<div class="bg-surface border border-frame rounded-lg px-4 py-4 flex flex-col gap-4 mb-4"><span class="text-canvas-contrast text-sm font-medium">new project</span> <div class="flex flex-col gap-1.5"><label class="text-muted-contrast text-xs">template (optional)</label> <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"><!--[-->`);
         const each_array = ensure_array_like(BUILD_TEMPLATES);
         for (let $$index = 0, $$length = each_array.length; $$index < $$length; $$index++) {
           let tpl = each_array[$$index];
-          $$renderer3.push(`<button${attr_class(`text-left px-3 py-2 rounded-md border text-xs transition-colors ${stringify(selectedTpl === tpl.id ? "border-accent text-control-c bg-secondary" : "border-base-b text-muted-c hover:text-control-c hover:border-accent/50 hover:bg-secondary/50")}`)}><div class="font-medium">${escape_html(tpl.label)}</div> <div class="text-xs opacity-70 mt-0.5">${escape_html(tpl.description)}</div></button>`);
+          $$renderer3.push(`<button${attr_class(`text-left px-3 py-2 rounded-md border text-xs transition-colors ${stringify(selectedTpl === tpl.id ? "border-accent text-canvas-contrast bg-secondary" : "border-frame text-muted-contrast hover:text-canvas-contrast hover:border-accent/50 hover:bg-secondary/50")}`)}><div class="font-medium">${escape_html(tpl.label)}</div> <div class="text-xs opacity-70 mt-0.5">${escape_html(tpl.description)}</div></button>`);
         }
         $$renderer3.push(`<!--]--></div> `);
         if (selectedTpl) {
@@ -90,7 +90,7 @@ function _page($$renderer, $$props) {
           const tpl = BUILD_TEMPLATES.find((t) => t.id === selectedTpl);
           if (tpl) {
             $$renderer3.push("<!--[0-->");
-            $$renderer3.push(`<p class="text-muted-c text-xs mt-1">BUILD_CMD: <span class="font-mono text-control-c">${escape_html(tpl.buildCmd)}</span></p>`);
+            $$renderer3.push(`<p class="text-muted-contrast text-xs mt-1">BUILD_CMD: <span class="font-mono text-canvas-contrast">${escape_html(tpl.buildCmd)}</span></p>`);
           } else {
             $$renderer3.push("<!--[-1-->");
           }
@@ -98,7 +98,7 @@ function _page($$renderer, $$props) {
         } else {
           $$renderer3.push("<!--[-1-->");
         }
-        $$renderer3.push(`<!--]--></div> <div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div class="flex flex-col gap-1.5"><label class="text-muted-c text-xs">name <span class="text-red-500">*</span></label> `);
+        $$renderer3.push(`<!--]--></div> <div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div class="flex flex-col gap-1.5"><label class="text-muted-contrast text-xs">name <span class="text-red-500">*</span></label> `);
         Input($$renderer3, {
           placeholder: "my-app",
           monospace: true,
@@ -111,7 +111,7 @@ function _page($$renderer, $$props) {
             $$settled = false;
           }
         });
-        $$renderer3.push(`<!----></div> <div class="flex flex-col gap-1.5"><label class="text-muted-c text-xs">repo URL <span class="text-red-500">*</span></label> `);
+        $$renderer3.push(`<!----></div> <div class="flex flex-col gap-1.5"><label class="text-muted-contrast text-xs">repo URL <span class="text-red-500">*</span></label> `);
         Input($$renderer3, {
           placeholder: "https://github.com/org/repo",
           compact: true,
@@ -123,7 +123,7 @@ function _page($$renderer, $$props) {
             $$settled = false;
           }
         });
-        $$renderer3.push(`<!----></div> <div class="flex flex-col gap-1.5"><label class="text-muted-c text-xs">branch</label> `);
+        $$renderer3.push(`<!----></div> <div class="flex flex-col gap-1.5"><label class="text-muted-contrast text-xs">branch</label> `);
         Input($$renderer3, {
           placeholder: "main",
           monospace: true,
@@ -136,7 +136,7 @@ function _page($$renderer, $$props) {
             $$settled = false;
           }
         });
-        $$renderer3.push(`<!----></div> <div class="flex flex-col gap-1.5"><label class="text-muted-c text-xs">max instances (port count)</label> `);
+        $$renderer3.push(`<!----></div> <div class="flex flex-col gap-1.5"><label class="text-muted-contrast text-xs">max instances (port count)</label> `);
         Input($$renderer3, {
           type: "integer",
           placeholder: "4",
@@ -184,7 +184,7 @@ function _page($$renderer, $$props) {
       $$renderer3.push(`<!--]--> `);
       {
         $$renderer3.push("<!--[0-->");
-        $$renderer3.push(`<p class="text-muted-c text-sm">loading...</p>`);
+        $$renderer3.push(`<p class="text-muted-contrast text-sm">loading...</p>`);
       }
       $$renderer3.push(`<!--]-->`);
     }

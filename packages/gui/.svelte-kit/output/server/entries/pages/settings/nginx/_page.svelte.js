@@ -64,14 +64,14 @@ function _page($$renderer, $$props) {
     $$renderer2.push(`<!----></div> `);
     if (testOutput) {
       $$renderer2.push("<!--[0-->");
-      $$renderer2.push(`<pre${attr_class(`text-xs rounded-lg px-4 py-3 font-mono whitespace-pre-wrap border border-base-b ${stringify(testOutput.ok ? "bg-raised text-green-400" : "bg-raised text-red-400")}`)}>${escape_html(testOutput.text)}</pre>`);
+      $$renderer2.push(`<pre${attr_class(`text-xs rounded-lg px-4 py-3 font-mono whitespace-pre-wrap border border-frame ${stringify(testOutput.ok ? "bg-surface text-green-400" : "bg-surface text-red-400")}`)}>${escape_html(testOutput.text)}</pre>`);
     } else {
       $$renderer2.push("<!--[-1-->");
     }
     $$renderer2.push(`<!--]--> `);
     {
       $$renderer2.push("<!--[0-->");
-      $$renderer2.push(`<p class="text-muted-c text-sm">loading...</p>`);
+      $$renderer2.push(`<p class="text-muted-contrast text-sm">loading...</p>`);
     }
     $$renderer2.push(`<!--]--></div>`);
   });

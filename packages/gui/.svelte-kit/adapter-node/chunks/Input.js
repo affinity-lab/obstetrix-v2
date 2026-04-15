@@ -1,4 +1,4 @@
-import { m as sanitize_props, o as spread_props, p as slot, r as run, a as attr_class, i as clsx, c as escape_html, h as attributes, q as bind_props, f as derived, b as stringify } from "./renderer.js";
+import { o as sanitize_props, p as spread_props, q as slot, r as run, a as attr_class, h as clsx, c as escape_html, j as attributes, t as bind_props, f as derived, b as stringify } from "./renderer.js";
 import { t as twMerge } from "./bundle-mjs.js";
 import { I as Icon$1, d as defineIcon } from "./Icon.js";
 import { I as Icon } from "./Icon2.js";

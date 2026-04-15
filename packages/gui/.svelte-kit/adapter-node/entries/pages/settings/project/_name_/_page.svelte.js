@@ -1,4 +1,4 @@
-import { j as getContext, a as attr_class, i as clsx, f as derived, h as attributes, r as run, k as setContext, c as escape_html, g as store_get, e as ensure_array_like, b as stringify, u as unsubscribe_stores } from "../../../../../chunks/renderer.js";
+import { k as getContext, a as attr_class, h as clsx, f as derived, j as attributes, r as run, l as setContext, c as escape_html, g as store_get, e as ensure_array_like, b as stringify, u as unsubscribe_stores } from "../../../../../chunks/renderer.js";
 import { p as page } from "../../../../../chunks/stores.js";
 import { a as api } from "../../../../../chunks/tango.js";
 import { B as BUILD_TEMPLATES } from "../../../../../chunks/templates.js";
@@ -274,7 +274,7 @@ function _page($$renderer, $$props) {
           TabPanel($$renderer4, {
             id: "deploy",
             children: ($$renderer5) => {
-              $$renderer5.push(`<div class="flex flex-col gap-4 pt-4"><div class="flex flex-col gap-1.5"><label class="text-muted-c text-xs font-medium uppercase tracking-wide">build command <span class="normal-case font-normal ml-1 opacity-70">— runs in /obstetrix-projects/_work/${escape_html(name())}/</span></label> `);
+              $$renderer5.push(`<div class="flex flex-col gap-4 pt-4"><div class="flex flex-col gap-1.5"><label class="text-muted-contrast text-xs font-medium uppercase tracking-wide">build command <span class="normal-case font-normal ml-1 opacity-70">— runs in /obstetrix-projects/_work/${escape_html(name())}/</span></label> `);
               Textarea($$renderer5, {
                 placeholder: "bun install && bun run build",
                 monospace: true,
@@ -287,7 +287,7 @@ function _page($$renderer, $$props) {
                   $$settled = false;
                 }
               });
-              $$renderer5.push(`<!----> <p class="text-muted-c text-xs">Use <span class="font-mono">&amp;&amp;</span> to chain commands.
+              $$renderer5.push(`<!----> <p class="text-muted-contrast text-xs">Use <span class="font-mono">&amp;&amp;</span> to chain commands.
             Port is available as <span class="font-mono">$PORT</span> at runtime (not during build).</p></div> `);
               if (showTemplates) {
                 $$renderer5.push("<!--[0-->");
@@ -295,7 +295,7 @@ function _page($$renderer, $$props) {
                 const each_array = ensure_array_like(BUILD_TEMPLATES);
                 for (let $$index = 0, $$length = each_array.length; $$index < $$length; $$index++) {
                   let tpl = each_array[$$index];
-                  $$renderer5.push(`<button class="text-left px-3 py-2 rounded-md border border-base-b text-xs text-muted-c hover:text-control-c hover:border-accent/50 hover:bg-secondary/50 transition-colors"><div class="font-medium">${escape_html(tpl.label)}</div> <div class="opacity-70 mt-0.5 font-mono">${escape_html(tpl.buildCmd.slice(0, 32))}${escape_html(tpl.buildCmd.length > 32 ? "…" : "")}</div></button>`);
+                  $$renderer5.push(`<button class="text-left px-3 py-2 rounded-md border border-frame text-xs text-muted-contrast hover:text-canvas-contrast hover:border-accent/50 hover:bg-secondary/50 transition-colors"><div class="font-medium">${escape_html(tpl.label)}</div> <div class="opacity-70 mt-0.5 font-mono">${escape_html(tpl.buildCmd.slice(0, 32))}${escape_html(tpl.buildCmd.length > 32 ? "…" : "")}</div></button>`);
                 }
                 $$renderer5.push(`<!--]--></div> `);
                 Button($$renderer5, {
@@ -320,7 +320,7 @@ function _page($$renderer, $$props) {
                   $$slots: { default: true }
                 });
               }
-              $$renderer5.push(`<!--]--> <hr class="border-base-b"/> <div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div class="flex flex-col gap-1.5"><label class="text-muted-c text-xs font-medium uppercase tracking-wide">branch</label> `);
+              $$renderer5.push(`<!--]--> <hr class="border-frame"/> <div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div class="flex flex-col gap-1.5"><label class="text-muted-contrast text-xs font-medium uppercase tracking-wide">branch</label> `);
               Input($$renderer5, {
                 placeholder: "main",
                 monospace: true,
@@ -333,7 +333,7 @@ function _page($$renderer, $$props) {
                   $$settled = false;
                 }
               });
-              $$renderer5.push(`<!----></div> <div class="flex flex-col gap-1.5"><label class="text-muted-c text-xs font-medium uppercase tracking-wide">persistent dirs</label> `);
+              $$renderer5.push(`<!----></div> <div class="flex flex-col gap-1.5"><label class="text-muted-contrast text-xs font-medium uppercase tracking-wide">persistent dirs</label> `);
               Input($$renderer5, {
                 placeholder: "uploads,data",
                 monospace: true,
@@ -346,7 +346,7 @@ function _page($$renderer, $$props) {
                   $$settled = false;
                 }
               });
-              $$renderer5.push(`<!----> <p class="text-muted-c text-xs">comma-separated, relative to app dir — survive all deploys</p></div></div> <hr class="border-base-b"/> <div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div class="flex flex-col gap-1.5"><label class="text-muted-c text-xs font-medium uppercase tracking-wide">health check URL</label> `);
+              $$renderer5.push(`<!----> <p class="text-muted-contrast text-xs">comma-separated, relative to app dir — survive all deploys</p></div></div> <hr class="border-frame"/> <div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div class="flex flex-col gap-1.5"><label class="text-muted-contrast text-xs font-medium uppercase tracking-wide">health check URL</label> `);
               Input($$renderer5, {
                 placeholder: "http://127.0.0.1:$PORT/health",
                 monospace: true,
@@ -359,7 +359,7 @@ function _page($$renderer, $$props) {
                   $$settled = false;
                 }
               });
-              $$renderer5.push(`<!----> <p class="text-muted-c text-xs">must return 2xx after each instance restart</p></div> <div class="flex flex-col gap-1.5"><label class="text-muted-c text-xs font-medium uppercase tracking-wide">health timeout (seconds)</label> `);
+              $$renderer5.push(`<!----> <p class="text-muted-contrast text-xs">must return 2xx after each instance restart</p></div> <div class="flex flex-col gap-1.5"><label class="text-muted-contrast text-xs font-medium uppercase tracking-wide">health timeout (seconds)</label> `);
               Input($$renderer5, {
                 type: "integer",
                 placeholder: "60",
@@ -372,7 +372,7 @@ function _page($$renderer, $$props) {
                   $$settled = false;
                 }
               });
-              $$renderer5.push(`<!----></div></div> <hr class="border-base-b"/> <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div class="flex flex-col gap-1.5"><label class="text-muted-c text-xs font-medium uppercase tracking-wide">default instances</label> `);
+              $$renderer5.push(`<!----></div></div> <hr class="border-frame"/> <div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div class="flex flex-col gap-1.5"><label class="text-muted-contrast text-xs font-medium uppercase tracking-wide">default instances</label> `);
               Input($$renderer5, {
                 type: "integer",
                 placeholder: "1",
@@ -385,7 +385,7 @@ function _page($$renderer, $$props) {
                   $$settled = false;
                 }
               });
-              $$renderer5.push(`<!----> <p class="text-muted-c text-xs">how many instances start on first deploy</p></div> <div class="flex flex-col gap-3"><label class="text-muted-c text-xs font-medium uppercase tracking-wide">behaviour</label> `);
+              $$renderer5.push(`<!----> <p class="text-muted-contrast text-xs">how many instances start on first deploy</p></div> <div class="flex flex-col gap-3"><label class="text-muted-contrast text-xs font-medium uppercase tracking-wide">behaviour</label> `);
               Switch($$renderer5, {
                 label: {
                   on: "auto-rollback on failure",
@@ -447,7 +447,7 @@ function _page($$renderer, $$props) {
                 const each_array_1 = ensure_array_like(BUILD_TEMPLATES);
                 for (let $$index_1 = 0, $$length = each_array_1.length; $$index_1 < $$length; $$index_1++) {
                   let tpl = each_array_1[$$index_1];
-                  $$renderer5.push(`<button class="text-left px-3 py-2 rounded-md border border-base-b text-xs text-muted-c hover:text-control-c hover:border-accent/50 hover:bg-secondary/50 transition-colors"><div class="font-medium">${escape_html(tpl.label)}</div> <div class="opacity-70 mt-0.5 font-mono">${escape_html(tpl.buildCmd.slice(0, 30))}${escape_html(tpl.buildCmd.length > 30 ? "…" : "")}</div></button>`);
+                  $$renderer5.push(`<button class="text-left px-3 py-2 rounded-md border border-frame text-xs text-muted-contrast hover:text-canvas-contrast hover:border-accent/50 hover:bg-secondary/50 transition-colors"><div class="font-medium">${escape_html(tpl.label)}</div> <div class="opacity-70 mt-0.5 font-mono">${escape_html(tpl.buildCmd.slice(0, 30))}${escape_html(tpl.buildCmd.length > 30 ? "…" : "")}</div></button>`);
                 }
                 $$renderer5.push(`<!--]--></div> `);
                 Button($$renderer5, {
@@ -505,7 +505,7 @@ function _page($$renderer, $$props) {
                   $$settled = false;
                 }
               });
-              $$renderer5.push(`<!----> <p class="text-muted-c text-xs">Use <span class="font-mono">\${VAR}</span> to substitute values from <span class="font-mono">obstetrix.conf</span> at deploy time.</p> <div class="flex gap-2">`);
+              $$renderer5.push(`<!----> <p class="text-muted-contrast text-xs">Use <span class="font-mono">\${VAR}</span> to substitute values from <span class="font-mono">obstetrix.conf</span> at deploy time.</p> <div class="flex gap-2">`);
               Button($$renderer5, {
                 small: true,
                 onclick: saveEnv,
@@ -564,7 +564,7 @@ function _page($$renderer, $$props) {
           $$renderer4.push(`<!---->`);
         }
       });
-      $$renderer3.push(`<!----> <div class="border-t border-base-b pt-4 flex flex-col gap-3 mt-2"><span class="text-muted-c text-xs uppercase tracking-wide">danger zone</span> `);
+      $$renderer3.push(`<!----> <div class="border-t border-frame pt-4 flex flex-col gap-3 mt-2"><span class="text-muted-contrast text-xs uppercase tracking-wide">danger zone</span> `);
       if (!showDelete) {
         $$renderer3.push("<!--[0-->");
         $$renderer3.push(`<div>`);
@@ -580,7 +580,7 @@ function _page($$renderer, $$props) {
         $$renderer3.push(`<!----></div>`);
       } else {
         $$renderer3.push("<!--[-1-->");
-        $$renderer3.push(`<p class="text-muted-c text-xs">Stops all instances and removes config and port allocation.
+        $$renderer3.push(`<p class="text-muted-contrast text-xs">Stops all instances and removes config and port allocation.
         App directories are ${escape_html(removeData ? "deleted" : "kept")}.
         State files and deploy logs are always preserved.</p> `);
         Switch($$renderer3, {

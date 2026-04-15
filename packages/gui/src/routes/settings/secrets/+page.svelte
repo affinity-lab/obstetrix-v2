@@ -52,7 +52,7 @@
     { label: 'obstetrix.conf' },
   ]} />
 
-  <p class="text-muted-c text-xs">
+  <p class="text-muted-contrast text-xs">
     All settings including <code class="font-mono">GITHUB_TOKEN</code> and
     <code class="font-mono">PORT.*</code> assignments. Values for keys containing
     TOKEN / SECRET / KEY are masked by default.

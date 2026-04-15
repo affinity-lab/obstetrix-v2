@@ -23,7 +23,7 @@ function _page($$renderer, $$props) {
       $$renderer2.push("<!--[-1-->");
       $$renderer2.push(`<span class="inline-flex items-center gap-1 text-xs text-red-400"><span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>reconnecting…</span>`);
     }
-    $$renderer2.push(`<!--]--> <span class="text-muted-c text-xs">${escape_html(lines.length)} line${escape_html(lines.length === 1 ? "" : "s")}</span> `);
+    $$renderer2.push(`<!--]--> <span class="text-muted-contrast text-xs">${escape_html(lines.length)} line${escape_html(lines.length === 1 ? "" : "s")}</span> `);
     {
       $$renderer2.push("<!--[-1-->");
     }
@@ -37,17 +37,17 @@ function _page($$renderer, $$props) {
       },
       $$slots: { default: true }
     });
-    $$renderer2.push(`<!----></div> <div class="bg-raised border border-base-b rounded-lg font-mono text-xs h-[75vh] overflow-y-auto p-4">`);
+    $$renderer2.push(`<!----></div> <div class="bg-surface border border-frame rounded-lg font-mono text-xs h-[75vh] overflow-y-auto p-4">`);
     if (lines.length === 0) {
       $$renderer2.push("<!--[0-->");
-      $$renderer2.push(`<span class="text-muted-c">waiting for log output…</span>`);
+      $$renderer2.push(`<span class="text-muted-contrast">waiting for log output…</span>`);
     } else {
       $$renderer2.push("<!--[-1-->");
       $$renderer2.push(`<!--[-->`);
       const each_array = ensure_array_like(lines);
       for (let $$index = 0, $$length = each_array.length; $$index < $$length; $$index++) {
         let line = each_array[$$index];
-        $$renderer2.push(`<div${attr_class(`flex gap-2 leading-5 ${stringify(line.kind === "phase" ? "text-accent" : line.kind === "error" ? "text-red-400" : line.kind === "meta" ? "text-blue-400" : "text-control-c")}`)}><span class="text-muted-c select-none shrink-0">[${escape_html(formatTs(line.ts))}]</span> <span class="whitespace-pre-wrap break-all">${escape_html(line.text)}</span></div>`);
+        $$renderer2.push(`<div${attr_class(`flex gap-2 leading-5 ${stringify(line.kind === "phase" ? "text-accent" : line.kind === "error" ? "text-red-400" : line.kind === "meta" ? "text-blue-400" : "text-canvas-contrast")}`)}><span class="text-muted-contrast select-none shrink-0">[${escape_html(formatTs(line.ts))}]</span> <span class="whitespace-pre-wrap break-all">${escape_html(line.text)}</span></div>`);
       }
       $$renderer2.push(`<!--]-->`);
     }

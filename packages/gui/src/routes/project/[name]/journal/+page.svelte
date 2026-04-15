@@ -37,7 +37,7 @@
     const l = line.toLowerCase();
     if (l.includes('error') || l.includes('fatal') || l.includes('panic')) return 'text-red-400';
     if (l.includes('warn'))  return 'text-yellow-400';
-    return 'text-control-c';
+    return 'text-canvas-contrast';
   }
 
   onMount(load);
@@ -56,7 +56,7 @@
     <select
       bind:value={lines}
       onchange={load}
-      class="bg-control border border-base-b rounded-md h-8 text-xs text-control-c
+      class="bg-control border border-frame rounded-md h-8 text-xs text-canvas-contrast
              px-2 outline-none focus:ring-2 focus:ring-ring cursor-pointer"
     >
       <option value={100}>last 100</option>
@@ -73,9 +73,9 @@
   </div>
 
   {#if loading && !output}
-    <p class="text-muted-c text-sm">loading…</p>
+    <p class="text-muted-contrast text-sm">loading…</p>
   {:else}
-    <div class="bg-raised border border-base-b rounded-lg font-mono text-xs p-4 overflow-auto max-h-[80vh] whitespace-pre-wrap">
+    <div class="bg-surface border border-frame rounded-lg font-mono text-xs p-4 overflow-auto max-h-[80vh] whitespace-pre-wrap">
       {#each output.split('\n') as line}
         {#if line}
           <div class={lineClass(line)}>{line}</div>

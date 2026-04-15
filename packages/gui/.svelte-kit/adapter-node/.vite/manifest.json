@@ -265,7 +265,7 @@
       "_state.svelte.js"
     ],
     "css": [
-      "_app/immutable/assets/_layout.DyNA8XPN.css"
+      "_app/immutable/assets/_layout.BGnhiCC2.css"
     ]
   },
   "src/routes/+page.svelte": {
@@ -365,7 +365,6 @@
       "_Chip.js",
       "_Button.js",
       "_Input.js",
-      "_bundle-mjs.js",
       "_toast-manager.svelte.js"
     ]
   },

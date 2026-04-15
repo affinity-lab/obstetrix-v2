@@ -1,4 +1,4 @@
-import { h as attributes, i as clsx, e as ensure_array_like, c as escape_html, f as derived, d as attr, b as stringify, g as store_get, u as unsubscribe_stores } from "../../../../../chunks/renderer.js";
+import { j as attributes, h as clsx, e as ensure_array_like, c as escape_html, f as derived, d as attr, b as stringify, g as store_get, u as unsubscribe_stores } from "../../../../../chunks/renderer.js";
 import { p as page } from "../../../../../chunks/stores.js";
 import { a as api } from "../../../../../chunks/tango.js";
 import { s as shortTime, r as relativeTime, f as formatDuration } from "../../../../../chunks/format.js";
@@ -87,17 +87,17 @@ function _page($$renderer, $$props) {
     $$renderer2.push(`<!----> `);
     if (loading) {
       $$renderer2.push("<!--[0-->");
-      $$renderer2.push(`<p class="text-muted-c text-sm">loading...</p>`);
+      $$renderer2.push(`<p class="text-muted-contrast text-sm">loading...</p>`);
     } else if (filtered().length === 0) {
       $$renderer2.push("<!--[1-->");
-      $$renderer2.push(`<p class="text-muted-c text-sm">${escape_html(filter === "all" ? "no deploy logs yet" : `no ${filter} deploys`)}</p>`);
+      $$renderer2.push(`<p class="text-muted-contrast text-sm">${escape_html(filter === "all" ? "no deploy logs yet" : `no ${filter} deploys`)}</p>`);
     } else {
       $$renderer2.push("<!--[-1-->");
-      $$renderer2.push(`<div class="bg-raised border border-base-b rounded-lg overflow-hidden"><!--[-->`);
+      $$renderer2.push(`<div class="bg-surface border border-frame rounded-lg overflow-hidden"><!--[-->`);
       const each_array_1 = ensure_array_like(filtered());
       for (let $$index_1 = 0, $$length = each_array_1.length; $$index_1 < $$length; $$index_1++) {
         let log = each_array_1[$$index_1];
-        $$renderer2.push(`<div class="border-b border-base-b last:border-0"><a${attr("href", `/project/${stringify(name())}/deploys/${stringify(encodeURIComponent(log.deployId))}`)} class="flex items-center gap-3 px-4 py-3 hover:bg-secondary/50 transition-colors text-sm"><span class="font-mono text-control-c text-xs w-16 shrink-0">${escape_html(log.sha)}</span> <div class="flex-1 min-w-0 flex flex-col gap-0.5"><span class="text-control-c text-xs">${escape_html(shortTime(log.startedAt))}</span> <span class="text-muted-c text-xs">${escape_html(relativeTime(log.startedAt))}</span></div> `);
+        $$renderer2.push(`<div class="border-b border-frame last:border-0"><a${attr("href", `/project/${stringify(name())}/deploys/${stringify(encodeURIComponent(log.deployId))}`)} class="flex items-center gap-3 px-4 py-3 hover:bg-secondary/50 transition-colors text-sm"><span class="font-mono text-canvas-contrast text-xs w-16 shrink-0">${escape_html(log.sha)}</span> <div class="flex-1 min-w-0 flex flex-col gap-0.5"><span class="text-canvas-contrast text-xs">${escape_html(shortTime(log.startedAt))}</span> <span class="text-muted-contrast text-xs">${escape_html(relativeTime(log.startedAt))}</span></div> `);
         if (log.ok === null) {
           $$renderer2.push("<!--[0-->");
           Chip($$renderer2, {
@@ -117,7 +117,7 @@ function _page($$renderer, $$props) {
             $$slots: { default: true }
           });
         }
-        $$renderer2.push(`<!--]--> <span class="text-muted-c text-xs w-14 text-right shrink-0">${escape_html(formatDuration(log.durationMs))}</span></a> `);
+        $$renderer2.push(`<!--]--> <span class="text-muted-contrast text-xs w-14 text-right shrink-0">${escape_html(formatDuration(log.durationMs))}</span></a> `);
         if (log.ok !== null) {
           $$renderer2.push("<!--[0-->");
           $$renderer2.push(`<div class="px-4 pb-2 flex items-center gap-2">`);

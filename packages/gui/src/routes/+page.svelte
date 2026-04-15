@@ -127,27 +127,27 @@
 </script>
 
 <div class="flex items-center justify-between mb-4">
-  <span class="text-muted-c text-xs uppercase tracking-wide">projects</span>
+  <span class="text-muted-contrast text-xs uppercase tracking-wide">projects</span>
   {#if !showCreate}
     <Button small onclick={() => showCreate = true}>new project</Button>
   {/if}
 </div>
 
 {#if showCreate}
-  <div class="bg-raised border border-base-b rounded-lg px-4 py-4 flex flex-col gap-4 mb-4">
-    <span class="text-control-c text-sm font-medium">new project</span>
+  <div class="bg-surface border border-frame rounded-lg px-4 py-4 flex flex-col gap-4 mb-4">
+    <span class="text-canvas-contrast text-sm font-medium">new project</span>
 
     <!-- Template picker -->
     <div class="flex flex-col gap-1.5">
-      <label class="text-muted-c text-xs">template (optional)</label>
+      <label class="text-muted-contrast text-xs">template (optional)</label>
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
         {#each BUILD_TEMPLATES as tpl}
           <button
             onclick={() => selectedTpl = selectedTpl === tpl.id ? '' : tpl.id}
             class="text-left px-3 py-2 rounded-md border text-xs transition-colors
                    {selectedTpl === tpl.id
-                     ? 'border-accent text-control-c bg-secondary'
-                     : 'border-base-b text-muted-c hover:text-control-c hover:border-accent/50 hover:bg-secondary/50'}"
+                     ? 'border-accent text-canvas-contrast bg-secondary'
+                     : 'border-frame text-muted-contrast hover:text-canvas-contrast hover:border-accent/50 hover:bg-secondary/50'}"
           >
             <div class="font-medium">{tpl.label}</div>
             <div class="text-xs opacity-70 mt-0.5">{tpl.description}</div>
@@ -157,8 +157,8 @@
       {#if selectedTpl}
         {@const tpl = BUILD_TEMPLATES.find(t => t.id === selectedTpl)}
         {#if tpl}
-          <p class="text-muted-c text-xs mt-1">
-            BUILD_CMD: <span class="font-mono text-control-c">{tpl.buildCmd}</span>
+          <p class="text-muted-contrast text-xs mt-1">
+            BUILD_CMD: <span class="font-mono text-canvas-contrast">{tpl.buildCmd}</span>
           </p>
         {/if}
       {/if}
@@ -166,19 +166,19 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div class="flex flex-col gap-1.5">
-        <label class="text-muted-c text-xs">name <span class="text-red-500">*</span></label>
+        <label class="text-muted-contrast text-xs">name <span class="text-red-500">*</span></label>
         <Input bind:value={newName} placeholder="my-app" monospace compact />
       </div>
       <div class="flex flex-col gap-1.5">
-        <label class="text-muted-c text-xs">repo URL <span class="text-red-500">*</span></label>
+        <label class="text-muted-contrast text-xs">repo URL <span class="text-red-500">*</span></label>
         <Input bind:value={newRepoUrl} placeholder="https://github.com/org/repo" compact />
       </div>
       <div class="flex flex-col gap-1.5">
-        <label class="text-muted-c text-xs">branch</label>
+        <label class="text-muted-contrast text-xs">branch</label>
         <Input bind:value={newBranch} placeholder="main" monospace compact />
       </div>
       <div class="flex flex-col gap-1.5">
-        <label class="text-muted-c text-xs">max instances (port count)</label>
+        <label class="text-muted-contrast text-xs">max instances (port count)</label>
         <Input bind:value={newPorts} type="integer" placeholder="4" compact />
       </div>
     </div>
@@ -196,7 +196,7 @@
 {/if}
 
 {#if loading}
-  <p class="text-muted-c text-sm">loading...</p>
+  <p class="text-muted-contrast text-sm">loading...</p>
 {:else if error}
   <p class="text-red-400 text-sm">{error}</p>
 {:else if projects.length === 0}
@@ -211,10 +211,10 @@
   <div class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
     {#each projects as project (project.name)}
       {@const isDeploying = deployingSet.has(project.name)}
-      <div class="bg-raised border border-base-b rounded-lg px-4 py-4 flex flex-col gap-3 transition-colors
+      <div class="bg-surface border border-frame rounded-lg px-4 py-4 flex flex-col gap-3 transition-colors
                   {project.status === 'building' ? 'border-blue-500/50' : ''}">
         <div class="flex items-center justify-between">
-          <a href="/project/{project.name}" class="text-control-c font-medium text-sm hover:underline">
+          <a href="/project/{project.name}" class="text-canvas-contrast font-medium text-sm hover:underline">
             {project.name}
           </a>
           <div class="flex items-center gap-1.5">
@@ -227,18 +227,18 @@
 
         <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
           {#if project.currentSha}
-            <span class="text-muted-c">sha</span>
-            <span class="font-mono text-control-c">{project.currentSha.slice(0, 8)}</span>
+            <span class="text-muted-contrast">sha</span>
+            <span class="font-mono text-canvas-contrast">{project.currentSha.slice(0, 8)}</span>
           {/if}
-          <span class="text-muted-c">instances</span>
-          <span class="text-control-c">{project.instances} / {project.portCount}</span>
+          <span class="text-muted-contrast">instances</span>
+          <span class="text-canvas-contrast">{project.instances} / {project.portCount}</span>
           {#if project.lastDeployAt}
-            <span class="text-muted-c">deployed</span>
-            <span class="text-control-c">{relativeTime(project.lastDeployAt)}</span>
+            <span class="text-muted-contrast">deployed</span>
+            <span class="text-canvas-contrast">{relativeTime(project.lastDeployAt)}</span>
           {/if}
         </div>
 
-        <div class="flex gap-2 mt-auto pt-1 border-t border-base-b">
+        <div class="flex gap-2 mt-auto pt-1 border-t border-frame">
           <Button small onclick={() => deploy(project.name)} disabled={isDeploying} loading={isDeploying}>
             {isDeploying ? 'queued…' : 'deploy'}
           </Button>
