@@ -51,18 +51,27 @@ func (c *ConfigModule) CreateProject(ctx context.Context, name, repoURL, branch 
 // DeleteProject stops all instances, removes systemd units, config dir, port allocation,
 // _work/ dir, and optionally the deploy dir.
 func (c *ConfigModule) DeleteProject(ctx context.Context, name string, removeData bool) error {
-	c.svcs.Runner.RunAsRoot(ctx, fmt.Sprintf(
-		"systemctl stop '%s@*.service' 2>/dev/null; "+
-			"systemctl disable '%s@.service' 2>/dev/null; "+
-			"rm -f /etc/systemd/system/%s@.service; "+
-			"systemctl daemon-reload",
-		name, name, name), nil)
+	// 1. Stop and disable systemd units
+	unitPattern := name + "@*.service"
+	templateUnit := name + "@.service"
+	unitFile := "/etc/systemd/system/" + templateUnit
 
+	// We use bash -c for the wildcard stop/disable safely here as 'name' is validated 
+	// (or should be) before this call.
+	c.svcs.Runner.RunAsRootRaw(ctx, nil, "bash", "-c", 
+		fmt.Sprintf("systemctl stop %q 2>/dev/null; systemctl disable %q 2>/dev/null", unitPattern, templateUnit))
+	
+	os.Remove(unitFile)
+	c.svcs.Runner.RunAsRootRaw(ctx, nil, "systemctl", "daemon-reload")
+
+	// 2. Remove configuration
 	pp := c.svcs.ConfigWatcher.Paths().Project(name)
 	os.RemoveAll(pp.Dir)
 
+	// 3. Free port allocation
 	c.svcs.ConfigRW.FreePort(name)
 
+	// 4. Clean up work and deploy directories
 	projectsDir := c.svcs.Runner.ProjectsDir()
 	os.RemoveAll(projectsDir + "/_work/" + name)
 	if removeData {

@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os/exec"
 	"strings"
@@ -29,36 +28,33 @@ type RunResult struct {
 // Run executes shellCmd as appUser in the project's app directory.
 // stdout and stderr are merged and written to logWriter line-by-line.
 // Uses: sudo -u {appUser} -H bash --login -c "{shellCmd}"
+// DEPRECATED: use RunRaw to avoid shell injection.
 func (r *RunnerService) Run(ctx context.Context, proj *config.ProjectConfig, shellCmd string, logWriter io.Writer) (*RunResult, error) {
-	cmd := exec.CommandContext(ctx, "sudo", "-u", proj.AppUser, "-H",
-		"bash", "--login", "-c", shellCmd)
-	cmd.Dir = proj.AppDir
-
-	var out strings.Builder
-	if logWriter != nil {
-		cmd.Stdout = io.MultiWriter(&out, logWriter)
-		cmd.Stderr = io.MultiWriter(&out, logWriter)
-	} else {
-		cmd.Stdout = &out
-		cmd.Stderr = &out
-	}
-
-	err := cmd.Run()
-	exitCode := 0
-	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			exitCode = exitErr.ExitCode()
-		} else {
-			return nil, fmt.Errorf("run as %s: %w", proj.AppUser, err)
-		}
-	}
-	return &RunResult{ExitCode: exitCode, Output: out.String()}, nil
+	return r.RunRaw(ctx, proj, logWriter, "bash", "--login", "-c", shellCmd)
 }
 
-// RunAsRoot executes a command as root (for systemctl operations on project units,
-// which are host-level system services).
+// RunRaw executes a command as appUser in the project's app directory without a shell wrapper.
+func (r *RunnerService) RunRaw(ctx context.Context, proj *config.ProjectConfig, logWriter io.Writer, name string, args ...string) (*RunResult, error) {
+	sudoArgs := []string{"-u", proj.AppUser, "-H", name}
+	sudoArgs = append(sudoArgs, args...)
+	cmd := exec.CommandContext(ctx, "sudo", sudoArgs...)
+	cmd.Dir = proj.AppDir
+	return r.execute(cmd, logWriter)
+}
+
+// RunAsRoot executes a command as root.
+// DEPRECATED: use RunAsRootRaw to avoid shell injection.
 func (r *RunnerService) RunAsRoot(ctx context.Context, shellCmd string, logWriter io.Writer) (*RunResult, error) {
-	cmd := exec.CommandContext(ctx, "bash", "-c", shellCmd)
+	return r.RunAsRootRaw(ctx, logWriter, "bash", "-c", shellCmd)
+}
+
+// RunAsRootRaw executes a command as root without a shell wrapper.
+func (r *RunnerService) RunAsRootRaw(ctx context.Context, logWriter io.Writer, name string, args ...string) (*RunResult, error) {
+	cmd := exec.CommandContext(ctx, name, args...)
+	return r.execute(cmd, logWriter)
+}
+
+func (r *RunnerService) execute(cmd *exec.Cmd, logWriter io.Writer) (*RunResult, error) {
 	var out strings.Builder
 	if logWriter != nil {
 		cmd.Stdout = io.MultiWriter(&out, logWriter)
@@ -67,13 +63,14 @@ func (r *RunnerService) RunAsRoot(ctx context.Context, shellCmd string, logWrite
 		cmd.Stdout = &out
 		cmd.Stderr = &out
 	}
+
 	err := cmd.Run()
 	exitCode := 0
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			exitCode = exitErr.ExitCode()
 		} else {
-			return nil, fmt.Errorf("runAsRoot: %w", err)
+			return nil, err
 		}
 	}
 	return &RunResult{ExitCode: exitCode, Output: out.String()}, nil

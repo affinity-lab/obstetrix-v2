@@ -37,15 +37,9 @@ _install_go() {
 
 _install_bun() {
   if command -v bun &>/dev/null && [[ ${FORCE:-0} -eq 0 ]]; then
-    local ver; ver=$(bun --version 2>/dev/null)
-    local minor; minor=$(echo "$ver" | cut -d. -f2)
-    if [[ "$minor" -ge 2 ]]; then
-      info "bun $ver already installed"; return
-    fi
-    info "bun $ver is too old (need 1.2+), upgrading..."
-  else
-    info "installing bun (system-wide)..."
+    info "bun $(bun --version 2>/dev/null) already installed"; return
   fi
+  info "installing bun (system-wide)..."
   # Install into /usr/local so all users can run it
   BUN_INSTALL="/usr/local" curl -fsSL https://bun.sh/install | bash
   # Ensure symlink exists

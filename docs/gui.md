@@ -27,9 +27,11 @@ Shows a card for each project with:
 - **Last deployed** — relative time (e.g., "2m ago")
 - **Deploy** button — triggers a deploy immediately; button label becomes "deploying…" optimistically
 
+Each card has three action buttons: **deploy** (queues a deploy; shows "queued…" while pending), **detail** (links to the project detail page), and **logs** (links to the live log stream).
+
 Live updates arrive automatically via SSE. Status badges, SHAs, and last-deploy times update in real time.
 
-**Create project:** a form at the bottom of the dashboard (or on empty state) lets you create a new project. Select a **build template** to pre-fill `REPO_URL`, `BUILD_CMD`, `HEALTH_CHECK_URL`, and instance defaults, then customise as needed.
+**Create project:** click **new project** (top right) to open an inline form. Select an optional **build template** to pre-fill `BUILD_CMD` and health settings, then provide a name, repo URL, branch, and port count.
 
 ---
 
@@ -42,9 +44,10 @@ Detailed view for a single project:
 **Actions:**
 - **Deploy now** — queues a deploy
 - **Deploy sha…** — toggle a SHA input panel; enter any full or short SHA and click **deploy** to pin that exact commit
-- **View logs** — live log stream
+- **Logs** — live log stream
+- **Journal** — systemd journal tail for all `{name}@*.service` instances
 - **Deploys** — deploy history list
-- **Deploy settings** — opens the project config editor (deploy tab)
+- **Settings** — opens the project config editor (deploy tab)
 - **Rollback** (destructive, only shown when a previous SHA exists) — reverts to the previous commit
 
 **Scale slider:**
@@ -65,6 +68,19 @@ Real-time log stream with auto-reconnect (exponential backoff, 1 s → 30 s max)
 - **Line count** — shown in the header
 - **Auto-scroll** — pauses when you scroll up; **resume** button appears; **clear** empties the buffer
 - Buffer holds the last 1 000 lines.
+
+---
+
+## Journal (`/project/{name}/journal`)
+
+Tails the systemd journal for all running instances of the project (`{name}@*.service`) using `journalctl --output=short-iso`.
+
+- **Line count selector** — choose last 100 / 300 / 500 / 1 000 lines (default 300; max 2 000)
+- **Refresh** — manually reload the output
+- **Auto (5s)** — toggle auto-refresh every 5 seconds
+- Error/fatal/panic lines are highlighted red; warning lines yellow
+
+Useful for inspecting runtime crashes, startup errors, and application-level logs without SSH access.
 
 ---
 

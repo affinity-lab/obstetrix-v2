@@ -9,7 +9,10 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"os/user"
+	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/yourorg/obstetrix/orchestrator/internal/config"
@@ -47,9 +50,45 @@ func errResp(id int, msg string) rpcResponse {
 }
 
 // Dispatch is passed to SocketService.Serve. Called once per connection in a goroutine.
-// It renews the 5-minute idle deadline on every received line.
 func (r *RPCModule) Dispatch(conn net.Conn) {
 	defer conn.Close()
+
+	// 1. Get Peer Credentials (UID) to enforce authorization
+	var uid int
+	unixConn, ok := conn.(*net.UnixConn)
+	if !ok {
+		slog.Error("rpc dispatch: connection is not a unix socket")
+		return
+	}
+	raw, err := unixConn.SyscallConn()
+	if err != nil {
+		slog.Error("rpc dispatch: could not get syscall conn", "err", err)
+		return
+	}
+	var ucred *syscall.Ucred
+	raw.Control(func(fd uintptr) {
+		ucred, err = syscall.GetsockoptUcred(int(fd), syscall.SOL_SOCKET, syscall.SO_PEERCRED)
+	})
+	if err != nil {
+		slog.Error("rpc dispatch: could not get peer credentials", "err", err)
+		return
+	}
+	uid = int(ucred.Uid)
+
+	// 2. Identify the 'obstetrix' GUI user
+	obstetrixUID := -1
+	if u, err := user.Lookup("obstetrix"); err == nil {
+		if id, err := strconv.Atoi(u.Uid); err == nil {
+			obstetrixUID = id
+		}
+	}
+
+	// 3. Deny unknown callers
+	if uid != 0 && uid != obstetrixUID {
+		slog.Warn("rpc dispatch: access denied for unknown caller", "uid", uid)
+		return
+	}
+
 	scanner := bufio.NewScanner(conn)
 	enc := json.NewEncoder(conn)
 
@@ -73,7 +112,7 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 		var result interface{}
 		var rpcErr string
 
-		slog.Debug("rpc call", "method", req.Method, "id", req.ID)
+		slog.Debug("rpc call", "method", req.Method, "id", req.ID, "uid", uid)
 
 		switch req.Method {
 

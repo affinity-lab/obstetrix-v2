@@ -139,8 +139,8 @@ Every deploy (including the first) runs these steps in order:
 |------|--------|
 | 1 | Ensure system user, dirs, git clone, systemd unit |
 | 2 | Sync `.env` + `.npmrc` into `_work/myapp/` |
-| 3 | `git fetch origin` in `_work/myapp/` |
-| 4 | `git checkout {sha}` in `_work/myapp/` |
+| 3 | `git fetch --all` in `_work/myapp/` |
+| 4 | `git checkout -f {sha}` in `_work/myapp/` |
 | 5 | Read `obstetrix.json` from `_work/myapp/` |
 | 6 | Run build command in `_work/myapp/` as `obstetrix-myapp` |
 | 7 | Re-read `obstetrix.json` (build may have generated it) |
