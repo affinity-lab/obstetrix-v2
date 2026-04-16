@@ -358,7 +358,7 @@
       <div class="flex flex-col gap-3 pt-4">
         <Textarea
           bind:value={envText}
-          placeholder="NODE_ENV=production&#10;DATABASE_URL=${DATABASE_URL}"
+          placeholder="NODE_ENV=production&#10;DATABASE_URL=$&#123;DATABASE_URL&#125;"
           monospace
           rows={16}
         />
