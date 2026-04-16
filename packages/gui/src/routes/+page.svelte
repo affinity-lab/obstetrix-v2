@@ -1,12 +1,28 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Badge, Button } from '@atom-forge/ui';
+  import { Chip, Button, Input, EmptyState } from '@atom-forge/ui';
+  import { IconServer } from '@tabler/icons-svelte';
   import { api } from '$lib/tango.js';
+  import { relativeTime } from '$lib/format.js';
+  import { BUILD_TEMPLATES, templateToConf } from '$lib/templates.js';
   import type { ProjectState, BuildEvent, ProjectStatus } from '@obstetrix/shared';
 
   let projects = $state<ProjectState[]>([]);
   let loading  = $state(true);
   let error    = $state<string | null>(null);
+
+  // New project form
+  let showCreate    = $state(false);
+  let newName       = $state('');
+  let newRepoUrl    = $state('');
+  let newBranch     = $state('main');
+  let newPorts      = $state('4');
+  let selectedTpl   = $state<string>('');
+  let creating      = $state(false);
+  let createError   = $state<string | null>(null);
+
+  // Track which projects are deploying for optimistic spinner
+  let deployingSet  = $state(new Set<string>());
 
   async function load() {
     try {
@@ -21,7 +37,6 @@
   onMount(() => {
     load();
 
-    // Live updates from the global SSE stream (dispatched by +layout.svelte)
     const handler = (e: Event) => {
       const event = (e as CustomEvent<BuildEvent>).detail;
       projects = projects.map((p) => {
@@ -30,6 +45,8 @@
           return { ...p, status: event.status };
         }
         if (event.type === 'deploy_complete') {
+          deployingSet.delete(event.projectName);
+          deployingSet = new Set(deployingSet);
           return {
             ...p,
             status: event.ok ? 'running' : 'failed',
@@ -46,58 +63,186 @@
   });
 
   async function deploy(name: string) {
-    await api.deploy.trigger.$command({ name });
-  }
-
-  function statusColor(status: ProjectStatus): 'accent' | 'red' | 'blue' | undefined {
-    switch (status) {
-      case 'running':  return 'accent';
-      case 'failed':   return 'red';
-      case 'building': return 'blue';
-      default:         return undefined;
+    deployingSet = new Set([...deployingSet, name]);
+    try {
+      await api.deploy.trigger.$command({ name });
+    } catch {
+      deployingSet.delete(name);
+      deployingSet = new Set(deployingSet);
     }
   }
 
-  function relativeTime(iso: string): string {
-    const diff = Date.now() - new Date(iso).getTime();
-    const mins = Math.floor(diff / 60_000);
-    if (mins < 1)  return 'just now';
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24)  return `${hrs}h ago`;
-    return `${Math.floor(hrs / 24)}d ago`;
+  function cancelCreate() {
+    showCreate = false;
+    newName = ''; newRepoUrl = ''; newBranch = 'main'; newPorts = '4'; selectedTpl = '';
+    createError = null;
+  }
+
+  async function createProject() {
+    createError = null;
+    if (!/^[a-z0-9-]+$/.test(newName)) {
+      createError = 'name must be lowercase letters, numbers, and hyphens only';
+      return;
+    }
+    if (!newRepoUrl.trim()) {
+      createError = 'repo URL is required';
+      return;
+    }
+    creating = true;
+    try {
+      const { name: created } = await api.config.createProject.$command({
+        name:    newName.trim(),
+        repoUrl: newRepoUrl.trim(),
+        branch:  newBranch.trim() || 'main',
+        ports:   parseInt(newPorts) || 4,
+      });
+      // If a template was chosen, pre-fill project.conf
+      if (selectedTpl) {
+        const tpl = BUILD_TEMPLATES.find(t => t.id === selectedTpl);
+        if (tpl) {
+          const conf = templateToConf(tpl, newRepoUrl.trim(), newBranch.trim() || 'main');
+          const changes: Record<string, string> = {};
+          for (const line of conf.split('\n')) {
+            const eq = line.indexOf('=');
+            if (eq > 0) changes[line.slice(0, eq)] = line.slice(eq + 1);
+          }
+          await api.config.setProjectConf.$command({ name: created, changes });
+        }
+      }
+      location.href = `/settings/project/${created}`;
+    } catch (e) {
+      createError = String(e);
+      creating = false;
+    }
+  }
+
+  function statusColor(status: ProjectStatus): 'green' | 'red' | 'blue' | 'base' {
+    switch (status) {
+      case 'running':  return 'green';
+      case 'failed':   return 'red';
+      case 'building': return 'blue';
+      default:         return 'base';
+    }
   }
 </script>
 
+<div class="flex items-center justify-between mb-4">
+  <span class="text-muted-contrast text-xs uppercase tracking-wide">projects</span>
+  {#if !showCreate}
+    <Button small onclick={() => showCreate = true}>new project</Button>
+  {/if}
+</div>
+
+{#if showCreate}
+  <div class="bg-surface border border-frame rounded-lg px-4 py-4 flex flex-col gap-4 mb-4">
+    <span class="text-canvas-contrast text-sm font-medium">new project</span>
+
+    <!-- Template picker -->
+    <div class="flex flex-col gap-1.5">
+      <label class="text-muted-contrast text-xs">template (optional)</label>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+        {#each BUILD_TEMPLATES as tpl}
+          <button
+            onclick={() => selectedTpl = selectedTpl === tpl.id ? '' : tpl.id}
+            class="text-left px-3 py-2 rounded-md border text-xs transition-colors
+                   {selectedTpl === tpl.id
+                     ? 'border-accent text-canvas-contrast bg-secondary'
+                     : 'border-frame text-muted-contrast hover:text-canvas-contrast hover:border-accent/50 hover:bg-secondary/50'}"
+          >
+            <div class="font-medium">{tpl.label}</div>
+            <div class="text-xs opacity-70 mt-0.5">{tpl.description}</div>
+          </button>
+        {/each}
+      </div>
+      {#if selectedTpl}
+        {@const tpl = BUILD_TEMPLATES.find(t => t.id === selectedTpl)}
+        {#if tpl}
+          <p class="text-muted-contrast text-xs mt-1">
+            BUILD_CMD: <span class="font-mono text-canvas-contrast">{tpl.buildCmd}</span>
+          </p>
+        {/if}
+      {/if}
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div class="flex flex-col gap-1.5">
+        <label class="text-muted-contrast text-xs">name <span class="text-red-500">*</span></label>
+        <Input bind:value={newName} placeholder="my-app" monospace compact />
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-muted-contrast text-xs">repo URL <span class="text-red-500">*</span></label>
+        <Input bind:value={newRepoUrl} placeholder="https://github.com/org/repo" compact />
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-muted-contrast text-xs">branch</label>
+        <Input bind:value={newBranch} placeholder="main" monospace compact />
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-muted-contrast text-xs">max instances (port count)</label>
+        <Input bind:value={newPorts} type="integer" placeholder="4" compact />
+      </div>
+    </div>
+
+    {#if createError}
+      <p class="text-red-400 text-xs">{createError}</p>
+    {/if}
+    <div class="flex gap-2">
+      <Button small onclick={createProject} loading={creating}>
+        {creating ? 'creating…' : 'create'}
+      </Button>
+      <Button ghost small onclick={cancelCreate} disabled={creating}>cancel</Button>
+    </div>
+  </div>
+{/if}
+
 {#if loading}
-  <p class="text-muted-c text-sm">loading...</p>
+  <p class="text-muted-contrast text-sm">loading...</p>
 {:else if error}
   <p class="text-red-400 text-sm">{error}</p>
 {:else if projects.length === 0}
-  <p class="text-muted-c text-sm">no projects configured in /etc/obstetrix/projects/</p>
+  <EmptyState
+    icon={IconServer}
+    title="No projects yet"
+    description="Create a project or run obstetrix-ctl project create <name>"
+  >
+    <Button onclick={() => showCreate = true}>new project</Button>
+  </EmptyState>
 {:else}
   <div class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
     {#each projects as project (project.name)}
-      <div class="bg-raised border border-canvas rounded-lg px-4 py-4 flex flex-col gap-3">
+      {@const isDeploying = deployingSet.has(project.name)}
+      <div class="bg-surface border border-frame rounded-lg px-4 py-4 flex flex-col gap-3 transition-colors
+                  {project.status === 'building' ? 'border-blue-500/50' : ''}">
         <div class="flex items-center justify-between">
-          <a href="/project/{project.name}" class="text-control-c font-medium text-sm hover:underline">
+          <a href="/project/{project.name}" class="text-canvas-contrast font-medium text-sm hover:underline">
             {project.name}
           </a>
-          <Badge color={statusColor(project.status)}>{project.status}</Badge>
+          <div class="flex items-center gap-1.5">
+            {#if project.status === 'building'}
+              <span class="inline-block w-2.5 h-2.5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin"></span>
+            {/if}
+            <Chip color={statusColor(project.status)}>{project.status}</Chip>
+          </div>
         </div>
 
-        {#if project.currentSha}
-          <p class="text-muted-c text-xs font-mono">{project.currentSha.slice(0, 8)}</p>
-        {/if}
+        <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
+          {#if project.currentSha}
+            <span class="text-muted-contrast">sha</span>
+            <span class="font-mono text-canvas-contrast">{project.currentSha.slice(0, 8)}</span>
+          {/if}
+          <span class="text-muted-contrast">instances</span>
+          <span class="text-canvas-contrast">{project.instances} / {project.portCount}</span>
+          {#if project.lastDeployAt}
+            <span class="text-muted-contrast">deployed</span>
+            <span class="text-canvas-contrast">{relativeTime(project.lastDeployAt)}</span>
+          {/if}
+        </div>
 
-        {#if project.lastDeployAt}
-          <p class="text-muted-c text-xs">
-            deployed {relativeTime(project.lastDeployAt)}
-          </p>
-        {/if}
-
-        <div class="flex gap-2 mt-auto">
-          <Button small onclick={() => deploy(project.name)}>deploy</Button>
+        <div class="flex gap-2 mt-auto pt-1 border-t border-frame">
+          <Button small onclick={() => deploy(project.name)} disabled={isDeploying} loading={isDeploying}>
+            {isDeploying ? 'queued…' : 'deploy'}
+          </Button>
+          <Button ghost small onclick={() => location.href = `/project/${project.name}`}>detail</Button>
           <Button ghost small onclick={() => location.href = `/project/${project.name}/logs`}>logs</Button>
         </div>
       </div>

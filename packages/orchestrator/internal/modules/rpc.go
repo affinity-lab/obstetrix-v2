@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"os"
+	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/yourorg/obstetrix/orchestrator/internal/config"
@@ -70,6 +73,8 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 		var result interface{}
 		var rpcErr string
 
+		slog.Debug("rpc call", "method", req.Method, "id", req.ID)
+
 		switch req.Method {
 
 		case "status.all":
@@ -108,6 +113,7 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 			if sha == "" {
 				sha, _ = r.svcs.GitHub.HeadSHA(proj.RepoURL, proj.Branch)
 			}
+			slog.Info("deploy triggered via rpc", "project", p.Name, "sha", sha)
 			r.mods.Poller.TriggerDeploy(ctx, proj, sha, false)
 			result = map[string]bool{"queued": true}
 
@@ -127,6 +133,7 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 				rpcErr = fmt.Sprintf("project %q not found", p.Name)
 				break
 			}
+			slog.Info("rollback triggered via rpc", "project", p.Name, "sha", *st.PreviousSHA)
 			r.mods.Poller.TriggerDeploy(ctx, proj, *st.PreviousSHA, true)
 			result = map[string]bool{"ok": true}
 
@@ -142,6 +149,7 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 				rpcErr = fmt.Sprintf("project %q not found", p.Name)
 				break
 			}
+			slog.Info("scale set via rpc", "project", p.Name, "instances", p.Instances)
 			res, err := r.mods.Deploy.Scale(ctx, proj, p.Instances)
 			if err != nil {
 				rpcErr = err.Error()
@@ -162,7 +170,8 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 			result = map[string]interface{}{"instances": st.Instances, "ports": st.RunningPorts}
 
 		case "config.reload":
-			n := r.mods.Poller.ReloadProjects()
+			n := r.svcs.ConfigWatcher.ForceReload()
+			slog.Info("config reloaded via rpc", "count", n)
 			result = map[string]int{"reloaded": n}
 
 		case "config.setEnv":
@@ -173,6 +182,45 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 			json.Unmarshal(req.Params, &p)
 			pp := r.svcs.ConfigWatcher.Paths().Project(p.Name)
 			if err := r.svcs.ConfigRW.WriteRaw(pp.Env, p.Content); err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = map[string]bool{"ok": true}
+
+		case "config.getEnv":
+			var p struct {
+				Name string `json:"name"`
+			}
+			json.Unmarshal(req.Params, &p)
+			pp := r.svcs.ConfigWatcher.Paths().Project(p.Name)
+			content, err := r.svcs.ConfigRW.ReadRaw(pp.Env)
+			if err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = map[string]string{"content": content}
+
+		case "config.getNpmrc":
+			var p struct {
+				Name string `json:"name"`
+			}
+			json.Unmarshal(req.Params, &p)
+			pp := r.svcs.ConfigWatcher.Paths().Project(p.Name)
+			content, err := r.svcs.ConfigRW.ReadRaw(pp.Npmrc)
+			if err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = map[string]string{"content": content}
+
+		case "config.setNpmrc":
+			var p struct {
+				Name    string `json:"name"`
+				Content string `json:"content"`
+			}
+			json.Unmarshal(req.Params, &p)
+			pp := r.svcs.ConfigWatcher.Paths().Project(p.Name)
+			if err := r.svcs.ConfigRW.WriteRaw(pp.Npmrc, p.Content); err != nil {
 				rpcErr = err.Error()
 				break
 			}
@@ -236,6 +284,7 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 				rpcErr = err.Error()
 				break
 			}
+			r.svcs.ConfigWatcher.ForceReload()
 			result = map[string]bool{"ok": true}
 
 		case "config.createProject":
@@ -249,11 +298,13 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 			if p.Branch == "" {
 				p.Branch = "main"
 			}
+			slog.Info("creating project via rpc", "project", p.Name, "repo", p.RepoURL, "ports", p.Ports)
 			res, err := r.mods.Config.CreateProject(ctx, p.Name, p.RepoURL, p.Branch, p.Ports)
 			if err != nil {
 				rpcErr = err.Error()
 				break
 			}
+			slog.Info("project created", "project", p.Name)
 			result = res
 
 		case "config.deleteProject":
@@ -262,10 +313,12 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 				RemoveData bool   `json:"removeData"`
 			}
 			json.Unmarshal(req.Params, &p)
+			slog.Info("deleting project via rpc", "project", p.Name, "removeData", p.RemoveData)
 			if err := r.mods.Config.DeleteProject(ctx, p.Name, p.RemoveData); err != nil {
 				rpcErr = err.Error()
 				break
 			}
+			slog.Info("project deleted", "project", p.Name)
 			result = map[string]bool{"ok": true}
 
 		case "deployLogs.list":
@@ -278,6 +331,9 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 				rpcErr = err.Error()
 				break
 			}
+			if metas == nil {
+				metas = []config.DeployLogMeta{}
+			}
 			result = metas
 
 		case "deployLogs.read":
@@ -289,6 +345,9 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 			if err != nil {
 				rpcErr = err.Error()
 				break
+			}
+			if entries == nil {
+				entries = []config.DeployLogEntry{}
 			}
 			result = entries
 
@@ -363,6 +422,140 @@ func (r *RPCModule) Dispatch(conn net.Conn) {
 					enc.Encode(map[string]interface{}{"stream": true, "event": event})
 				}
 			}()
+			result = map[string]bool{"ok": true}
+
+		case "journal.tail":
+			var p struct {
+				Name  string `json:"name"`
+				Lines int    `json:"lines"`
+			}
+			json.Unmarshal(req.Params, &p)
+			if p.Lines <= 0 || p.Lines > 2000 {
+				p.Lines = 200
+			}
+			unitPattern := fmt.Sprintf("%s@*.service", p.Name)
+			out, err := exec.Command("journalctl", "-u", unitPattern,
+				"--no-pager", fmt.Sprintf("-n%d", p.Lines), "--output=short-iso").CombinedOutput()
+			if err != nil && len(out) == 0 {
+				rpcErr = err.Error()
+				break
+			}
+			result = map[string]string{"output": string(out)}
+
+		case "nginx.list":
+			entries, err := os.ReadDir("/etc/nginx/sites-available")
+			if err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			type nginxSite struct {
+				Name    string `json:"name"`
+				Enabled bool   `json:"enabled"`
+			}
+			sites := make([]nginxSite, 0, len(entries))
+			for _, e := range entries {
+				if e.IsDir() {
+					continue
+				}
+				name := e.Name()
+				_, statErr := os.Lstat("/etc/nginx/sites-enabled/" + name)
+				sites = append(sites, nginxSite{Name: name, Enabled: statErr == nil})
+			}
+			result = sites
+
+		case "nginx.get":
+			var p struct {
+				Name string `json:"name"`
+			}
+			json.Unmarshal(req.Params, &p)
+			if strings.ContainsAny(p.Name, "/\\") || strings.Contains(p.Name, "..") {
+				rpcErr = "invalid config name"
+				break
+			}
+			data, err := os.ReadFile("/etc/nginx/sites-available/" + p.Name)
+			if err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			result = map[string]string{"content": string(data)}
+
+		case "nginx.set":
+			var p struct {
+				Name    string `json:"name"`
+				Content string `json:"content"`
+			}
+			json.Unmarshal(req.Params, &p)
+			if strings.ContainsAny(p.Name, "/\\") || strings.Contains(p.Name, "..") {
+				rpcErr = "invalid config name"
+				break
+			}
+			path := "/etc/nginx/sites-available/" + p.Name
+			// Back up existing content so we can restore on nginx -t failure.
+			existing, _ := os.ReadFile(path)
+			if err := os.WriteFile(path, []byte(p.Content), 0644); err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			out, err := exec.Command("nginx", "-t").CombinedOutput()
+			if err != nil {
+				// Restore backup.
+				if existing != nil {
+					os.WriteFile(path, existing, 0644)
+				} else {
+					os.Remove(path)
+				}
+				rpcErr = "nginx -t failed: " + strings.TrimSpace(string(out))
+				break
+			}
+			slog.Info("nginx config saved", "site", p.Name)
+			result = map[string]interface{}{"ok": true, "output": strings.TrimSpace(string(out))}
+
+		case "nginx.test":
+			out, err := exec.Command("nginx", "-t").CombinedOutput()
+			result = map[string]interface{}{"ok": err == nil, "output": strings.TrimSpace(string(out))}
+
+		case "nginx.reload":
+			out, err := exec.Command("systemctl", "reload", "nginx").CombinedOutput()
+			if err != nil {
+				rpcErr = "reload failed: " + strings.TrimSpace(string(out))
+				break
+			}
+			slog.Info("nginx reloaded via rpc")
+			result = map[string]interface{}{"ok": true, "output": strings.TrimSpace(string(out))}
+
+		case "nginx.enable":
+			var p struct {
+				Name string `json:"name"`
+			}
+			json.Unmarshal(req.Params, &p)
+			if strings.ContainsAny(p.Name, "/\\.") {
+				rpcErr = "invalid config name"
+				break
+			}
+			src := "/etc/nginx/sites-available/" + p.Name
+			dst := "/etc/nginx/sites-enabled/" + p.Name
+			os.Remove(dst)
+			if err := os.Symlink(src, dst); err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			slog.Info("nginx site enabled", "site", p.Name)
+			result = map[string]bool{"ok": true}
+
+		case "nginx.disable":
+			var p struct {
+				Name string `json:"name"`
+			}
+			json.Unmarshal(req.Params, &p)
+			if strings.ContainsAny(p.Name, "/\\.") {
+				rpcErr = "invalid config name"
+				break
+			}
+			if err := os.Remove("/etc/nginx/sites-enabled/" + p.Name); err != nil {
+				rpcErr = err.Error()
+				break
+			}
+			slog.Info("nginx site disabled", "site", p.Name)
 			result = map[string]bool{"ok": true}
 
 		default:

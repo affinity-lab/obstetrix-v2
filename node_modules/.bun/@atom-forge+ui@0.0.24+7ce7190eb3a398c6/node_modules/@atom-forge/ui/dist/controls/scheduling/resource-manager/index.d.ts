@@ -1,0 +1,2 @@
+export { default as ResourceManager } from './ResourceManager.svelte';
+export type * as ResourceManagerTypes from './rm.types';

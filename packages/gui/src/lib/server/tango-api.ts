@@ -48,6 +48,15 @@ const api = {
     setEnv: tango.command(async (args: { name: string; content: string }): Promise<{ ok: boolean }> =>
       modules.orchestrator.setEnv(args.name, args.content)),
 
+    getEnv: tango.query(async (args: { name: string }): Promise<{ content: string }> =>
+      modules.orchestrator.getEnv(args.name)),
+
+    getNpmrc: tango.query(async (args: { name: string }): Promise<{ content: string }> =>
+      modules.orchestrator.getNpmrc(args.name)),
+
+    setNpmrc: tango.command(async (args: { name: string; content: string }): Promise<{ ok: boolean }> =>
+      modules.orchestrator.setNpmrc(args.name, args.content)),
+
     syncEnv: tango.command(async (args: { name: string }): Promise<{ ok: boolean }> =>
       modules.orchestrator.syncEnv(args.name)),
 
@@ -85,6 +94,37 @@ const api = {
   system: {
     disk: tango.query(async (_args: undefined): Promise<DiskInfo[]> =>
       modules.orchestrator.diskInfo()),
+
+    daemonStatus: tango.query(async (_args: undefined) =>
+      modules.orchestrator.daemonStatus()),
+  },
+
+  journal: {
+    tail: tango.query(async (args: { name: string; lines?: number }): Promise<{ output: string }> =>
+      modules.orchestrator.journalTail(args.name, args.lines)),
+  },
+
+  nginx: {
+    list: tango.query(async (_args: undefined): Promise<{ name: string; enabled: boolean }[]> =>
+      modules.orchestrator.listNginxConfigs()),
+
+    get: tango.query(async (args: { name: string }): Promise<{ content: string }> =>
+      modules.orchestrator.getNginxConfig(args.name)),
+
+    set: tango.command(async (args: { name: string; content: string }): Promise<{ ok: boolean; output: string }> =>
+      modules.orchestrator.setNginxConfig(args.name, args.content)),
+
+    test: tango.query(async (_args: undefined): Promise<{ ok: boolean; output: string }> =>
+      modules.orchestrator.testNginx()),
+
+    reload: tango.command(async (_args: undefined): Promise<{ ok: boolean; output: string }> =>
+      modules.orchestrator.reloadNginx()),
+
+    enable: tango.command(async (args: { name: string }): Promise<{ ok: boolean }> =>
+      modules.orchestrator.enableNginxSite(args.name)),
+
+    disable: tango.command(async (args: { name: string }): Promise<{ ok: boolean }> =>
+      modules.orchestrator.disableNginxSite(args.name)),
   },
 };
 

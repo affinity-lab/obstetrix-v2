@@ -27,6 +27,16 @@ type DeployLogWriter struct {
 	startedAt time.Time
 	logDir    string
 	tmpPath   string
+	deployID  string // set by Close
+}
+
+// DeployID returns the log filename stem (e.g. "2006-01-02T15-04-05Z_sha8_ok").
+// Only valid after Close has been called.
+func (w *DeployLogWriter) DeployID() string {
+	if w == nil {
+		return ""
+	}
+	return w.deployID
 }
 
 // OpenWriter creates a new deploy log file. Returns nil writer (no error) if log dir unavailable.
@@ -42,7 +52,7 @@ func (s *DeployLogService) OpenWriter(projectName, sha string) (*DeployLogWriter
 	if len(sha8) > 8 {
 		sha8 = sha8[:8]
 	}
-	tmpPath := filepath.Join(logDir, fmt.Sprintf("%s_%s.jsonl.running", ts, sha8))
+	tmpPath := filepath.Join(logDir, fmt.Sprintf("%s_%s.running", ts, sha8))
 
 	f, err := os.Create(tmpPath)
 	if err != nil {
@@ -112,6 +122,7 @@ func (w *DeployLogWriter) Close(ok bool, durationMs int64, errMsg string) {
 	}
 	finalPath := strings.TrimSuffix(w.tmpPath, ".running") + suffix + ".jsonl"
 	os.Rename(w.tmpPath, finalPath)
+	w.deployID = strings.TrimSuffix(filepath.Base(finalPath), ".jsonl")
 }
 
 func (w *DeployLogWriter) writeEntry(entry config.DeployLogEntry) {
@@ -137,7 +148,7 @@ func (s *DeployLogService) List(projectName string) ([]config.DeployLogMeta, err
 			continue
 		}
 		name := e.Name()
-		if !strings.HasSuffix(name, ".jsonl") && !strings.HasSuffix(name, ".jsonl.running") {
+		if !strings.HasSuffix(name, ".jsonl") && !strings.HasSuffix(name, ".running") {
 			continue
 		}
 		meta, err := parseLogFilename(projectName, filepath.Join(logDir, name))

@@ -1,0 +1,1 @@
+{"version":3,"file":"tango-BLNraxd9.js","sources":["../../../.svelte-kit/adapter-node/chunks/tango.js"],"sourcesContent":["import { createClient } from \"@atom-forge/tango-rpc\";\nconst [api] = createClient(\"/api/tango\");\nexport {\n  api as a\n};\n"],"names":[],"mappings":";;AACK,MAAC,CAAC,GAAG,CAAC,GAAG,YAAY,CAAC,YAAY;;;;"}

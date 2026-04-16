@@ -91,6 +91,7 @@ One subdirectory per project. The directory name is the project name.
 | `BACKUP_DIR` | — | global | Custom backup destination |
 | `BACKUP_INCLUDE_DATA` | — | `true` | Include persistent dirs in backups |
 | `BACKUP_INCLUDE_ENV` | — | `true` | Include `.env` and `.npmrc` in backups |
+| `AUTO_DEPLOY` | — | `true` | Auto-deploy when the poller detects a new commit. Set to `false` for manual-only deploys. Has no effect on projects that have never been deployed — those always require an explicit first deploy. |
 
 Note: `BASE_PORT` and `PORT_COUNT` are set automatically from `PORT.{name}` in `obstetrix.conf`. Do not set them manually.
 
@@ -103,6 +104,7 @@ BUILD_CMD=bun install && bun run build
 HEALTH_CHECK_URL=http://127.0.0.1:4000/health
 HEALTH_TIMEOUT=60
 ROLLBACK_ON_FAIL=true
+AUTO_DEPLOY=true
 DEFAULT_INSTANCES=1
 PERSISTENT_DIRS=uploads,data
 ```

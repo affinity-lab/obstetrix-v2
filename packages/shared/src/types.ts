@@ -46,6 +46,7 @@ export type ProjectState = {
 };
 
 export type DeployRecord = {
+  deployId:   string;
   sha:        string;
   at:         string;   // ISO 8601 UTC
   ok:         boolean;

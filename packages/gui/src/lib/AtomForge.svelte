@@ -21,8 +21,8 @@
       ? JSON.parse(saved)
       : light ? false : (window.matchMedia('(prefers-color-scheme: dark)').matches || dark);
     document.documentElement.classList.toggle('dark', useDark);
-    document.body.style.background = 'var(--color-base)';
-    document.body.style.color = 'var(--color-control-c)';
+    document.body.style.background = 'var(--color-canvas)';
+    document.body.style.color = 'var(--color-canvas-contrast)';
     localStorage.setItem('dark', JSON.stringify(useDark));
     requestAnimationFrame(() => { isInitialized = true; });
   });

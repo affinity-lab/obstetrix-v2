@@ -13,7 +13,7 @@ func Shell(args []string) error {
 		return fmt.Errorf("usage: obstetrix-ctl shell <project>")
 	}
 	name := args[0]
-	user := "obstetrix-" + name
+	user := "obstetrix"
 	workDir := "/obstetrix-projects/" + name
 
 	cmd := exec.Command("sudo", "-u", user, "-i", "--",
