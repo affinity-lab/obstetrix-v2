@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page }    from '$app/stores';
   import { onMount } from 'svelte';
-  import { Button, Switch, Input, Textarea, Tabs, TabList, Tab, TabPanel, Breadcrumb, getToastManager } from '@atom-forge/ui';
+  import { Button, Switch, Input, Textarea, Tabs, TabList, Tab, Breadcrumb, getToastManager } from '@atom-forge/ui';
   import { api }     from '$lib/tango.js';
   import { BUILD_TEMPLATES, templateToConf } from '$lib/templates.js';
 
@@ -87,14 +87,22 @@
       confLoaded = true;
     }
     if (id === 'env' && !envLoaded) {
-      const res = await api.config.getEnv.$query({ name });
-      envText = res.content;
-      envLoaded = true;
+      try {
+        const res = await api.config.getEnv.$query({ name });
+        envText = res.content;
+        envLoaded = true;
+      } catch (e) {
+        toast.show(`Failed to load .env: ${e}`, { type: 'error' });
+      }
     }
     if (id === 'npmrc' && !npmrcLoaded) {
-      const res = await api.config.getNpmrc.$query({ name });
-      npmrcText = res.content;
-      npmrcLoaded = true;
+      try {
+        const res = await api.config.getNpmrc.$query({ name });
+        npmrcText = res.content;
+        npmrcLoaded = true;
+      } catch (e) {
+        toast.show(`Failed to load .npmrc: ${e}`, { type: 'error' });
+      }
     }
   }
 
@@ -217,7 +225,7 @@
     </TabList>
 
     <!-- ── Deploy tab ─────────────────────────────────────── -->
-    <TabPanel id="deploy">
+    {#if activeTab === 'deploy'}
       <div class="flex flex-col gap-4 pt-4">
 
         <!-- Build command -->
@@ -309,10 +317,10 @@
           </Button>
         </div>
       </div>
-    </TabPanel>
+    {/if}
 
     <!-- ── Raw conf tab ───────────────────────────────────── -->
-    <TabPanel id="conf">
+    {#if activeTab === 'conf'}
       <div class="flex flex-col gap-3 pt-4">
         <Textarea
           bind:value={confText}
@@ -343,10 +351,10 @@
           </div>
         {/if}
       </div>
-    </TabPanel>
+    {/if}
 
     <!-- ── .env tab ───────────────────────────────────────── -->
-    <TabPanel id="env">
+    {#if activeTab === 'env'}
       <div class="flex flex-col gap-3 pt-4">
         <Textarea
           bind:value={envText}
@@ -367,10 +375,10 @@
           </Button>
         </div>
       </div>
-    </TabPanel>
+    {/if}
 
     <!-- ── .npmrc tab ─────────────────────────────────────── -->
-    <TabPanel id="npmrc">
+    {#if activeTab === 'npmrc'}
       <div class="flex flex-col gap-3 pt-4">
         <Textarea
           bind:value={npmrcText}
@@ -384,7 +392,7 @@
           </Button>
         </div>
       </div>
-    </TabPanel>
+    {/if}
   </Tabs>
 
   <!-- ── Danger zone ────────────────────────────────────── -->
